@@ -1,0 +1,2986 @@
+<!-- © 2026 Paddy Gallivan. All rights reserved. SSV Division Hub -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSV Division Hub - Hobsons Bay & Wyndham</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1B2A4A;
+            --secondary: #0D9488;
+            --gold-bg: #FFD700;
+            --gold-qual: #D4A843;
+            --altona: #DC2626;
+            --laverton: #2563EB;
+            --pointcook: #16A34A;
+            --williamstown: #D4A843;
+            --hoppers: #DC2626;
+            --derrimut: #2563EB;
+            --tarneit: #16A34A;
+            --truganina: #D4A843;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --light: #F3F4F6;
+            --border: #E5E7EB;
+            --text-dark: #1F2937;
+            --text-light: #6B7280;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.15);
+        }
+
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #F8FAFB 0%, #F0F4F8 100%);
+            height: 100%;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        #root {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* HEADER & NAVIGATION */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #0F172A 100%);
+            color: white;
+            padding: 1rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #22C55E;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .search-bar {
+            flex: 0.5;
+            min-width: 150px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 0.5rem;
+        }
+
+        .search-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-dark);
+        }
+
+        .search-item:hover {
+            background: var(--light);
+        }
+
+        .search-item-type {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .division-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .division-toggle button {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .division-toggle button.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: white;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 1rem 0;
+            animation: slideInLeft 0.3s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--light);
+        }
+
+        .nav-item.active {
+            background: #E0F2FE;
+            color: var(--primary);
+            border-left-color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            padding: 0.5rem 0;
+            z-index: 99;
+        }
+
+        .bottom-nav-main {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 0;
+        }
+
+        .bottom-nav-more-menu {
+            position: absolute;
+            bottom: 60px;
+            right: 0;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 150px;
+            animation: slideUp 0.2s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* CARDS & LAYOUT */
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .card h4 {
+            color: var(--primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.05rem;
+        }
+
+        .card p {
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .stat-card .label {
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* EVENTS & RESULTS */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .event-card-header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .event-card-header .sport {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .event-card-header .status-badge {
+            background: rgba(255,255,255,0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .event-card-header.completed {
+            background: #6B7280;
+        }
+
+        .event-card-body {
+            padding: 1rem;
+        }
+
+        .event-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .event-detail .label {
+            color: var(--text-light);
+        }
+
+        .event-detail .value {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .countdown {
+            background: #E0F2FE;
+            color: var(--secondary);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+
+        /* SPORTS GRID */
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .sport-card {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sport-card:hover {
+            border-color: var(--secondary);
+            box-shadow: var(--shadow);
+        }
+
+        .sport-card.selected {
+            background: #E0F2FE;
+            border-color: var(--secondary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sport-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sport-name {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+
+        .sport-detail-panel {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .sport-detail-panel h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .sport-detail-panel h4 {
+            color: var(--primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .sport-detail-panel ul {
+            list-style: none;
+            margin-bottom: 1rem;
+            margin-left: 0;
+        }
+
+        .sport-detail-panel li {
+            padding: 0.5rem 0;
+            color: var(--text-dark);
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .sport-detail-panel li:before {
+            content: "▪";
+            position: absolute;
+            left: 0;
+            color: var(--secondary);
+        }
+
+        .pdf-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--secondary);
+            color: white;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .pdf-link:hover {
+            background: #0B7366;
+        }
+
+        /* SWIMMING PROGRAM */
+        .swimming-program {
+            margin-top: 2rem;
+        }
+
+        .swimming-program h4 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .program-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+        }
+
+        .program-table th {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .program-table td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .program-table tr:nth-child(even) {
+            background: #F9FAFB;
+        }
+
+        .program-table tr:hover {
+            background: #EFF6FF;
+        }
+
+        .program-table tr.lunch-break {
+            background: #FEF3C7;
+            font-weight: 600;
+        }
+
+        .canteen-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .canteen-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .canteen-item-name {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .canteen-item-price {
+            color: var(--secondary);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .canteen-item-avail {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        /* BUTTONS */
+        button, .button {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0B7366;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #E5E7EB;
+        }
+
+        .btn-small {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--light);
+            color: var(--primary);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--light);
+        }
+
+        .qualification-badge {
+            display: inline-block;
+            background: var(--gold-qual);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .qualification-badge.eligible {
+            background: var(--success);
+        }
+
+        /* QUICK ACTIONS */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .quick-action-btn {
+            background: white;
+            border: 2px solid var(--secondary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .quick-action-btn:hover {
+            background: #E0F2FE;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .quick-action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* LOADING SPINNER */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* PIPELINE */
+        .pipeline-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .pipeline-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .pipeline-step-circle {
+            width: 60px;
+            height: 60px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .pipeline-step-circle.completed {
+            background: var(--success);
+        }
+
+        .pipeline-step-label {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .pipeline-arrow {
+            flex: 0.5;
+            text-align: center;
+            color: var(--border);
+            font-size: 1.5rem;
+        }
+
+        .pipeline-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .pipeline-stat {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .pipeline-stat .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .pipeline-stat .label {
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* EVENT DAY PAGE */
+        .event-day-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .menu-item-name {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .menu-item-price {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .volunteer-list {
+            list-style: none;
+        }
+
+        .volunteer-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .volunteer-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .volunteer-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            .header, .sidebar, .bottom-nav {
+                display: none !important;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .main-container {
+                display: block;
+            }
+
+            .card, .sport-detail-panel {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid var(--border);
+            }
+
+            button, .btn-primary, .btn-secondary {
+                display: none;
+            }
+
+            table {
+                width: 100%;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .header-left {
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 1.25rem;
+            }
+
+            .search-bar {
+                min-width: 100%;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                padding: 1rem;
+                padding-bottom: 70px;
+            }
+
+            .bottom-nav {
+                display: flex;
+            }
+
+            .bottom-nav-item {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.25rem;
+                padding: 0.5rem;
+                font-size: 0.65rem;
+                cursor: pointer;
+                color: var(--text-light);
+                text-align: center;
+                transition: color 0.2s;
+            }
+
+            .bottom-nav-item.active {
+                color: var(--secondary);
+                font-weight: 600;
+            }
+
+            .bottom-nav-item-icon {
+                font-size: 1.5rem;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .event-day-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 1.5rem;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // FIREBASE CONFIG
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyA-bNl8XqvZ7DQ6YftL9teXbqxYICBlPF8",
+            authDomain: "willy-district-sport.firebaseapp.com",
+            databaseURL: "https://willy-district-sport-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "willy-district-sport",
+            storageBucket: "willy-district-sport.firebasestorage.app",
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
+        }
+
+        const db = firebase.database();
+        const TODAY = new Date('2026-03-27');
+
+        // SEED DATA
+        const SEED_EVENTS = [
+            { sport: 'Lawn Bowls', date: '2026-03-04', time: '9:30 AM', venue: 'TBC', division: 'Both', status: 'Completed' },
+            { sport: 'Swimming', date: '2026-03-05', time: '10:00 AM', venue: 'Werribee Outdoor Olympic Pool, 220 Watton St, Werribee', division: 'Both', status: 'Completed' },
+            { sport: 'Tennis', date: '2026-03-11', time: 'All Day', venue: 'Various', division: 'Both', status: 'Completed' },
+            { sport: 'Basketball', date: '2026-03-18', time: 'All Day', venue: 'Various', division: 'Both', status: 'Completed' },
+            { sport: 'Cricket', date: '2026-03-25', time: 'All Day', venue: 'Various', division: 'Both', status: 'Completed' },
+            { sport: 'Tee Ball', date: '2026-04-01', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Softball', date: '2026-05-13', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Cross Country', date: '2026-05-20', time: '9:30 AM', venue: 'TBC', division: 'Both', status: 'Upcoming' },
+            { sport: 'AFL', date: '2026-06-10', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Soccer', date: '2026-06-17', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Netball', date: '2026-06-24', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Hockey', date: '2026-07-01', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' },
+            { sport: 'Athletics', date: '2026-09-15', time: '9:00 AM', venue: 'TBC', division: 'HB', status: 'Upcoming' },
+            { sport: 'Athletics', date: '2026-09-16', time: '9:00 AM', venue: 'TBC', division: 'Wyndham', status: 'Upcoming' },
+            { sport: 'Volleyball', date: '2026-11-04', time: 'All Day', venue: 'Various', division: 'Both', status: 'Upcoming' }
+        ];
+
+        const TERMS = [
+            { name: 'Term 1', start: '2026-01-28', end: '2026-04-04', sports: ['Swimming', 'Tennis', 'Basketball', 'Cricket', 'Lawn Bowls', 'Tee Ball'] },
+            { name: 'Term 2', start: '2026-04-21', end: '2026-06-27', sports: ['Softball', 'Cross Country', 'AFL', 'Soccer', 'Netball'] },
+            { name: 'Term 3', start: '2026-07-14', end: '2026-09-19', sports: ['Hockey', 'Athletics'] },
+            { name: 'Term 4', start: '2026-10-06', end: '2026-12-19', sports: ['Volleyball'] }
+        ];
+
+        const SPORTS_DATA = {
+            'Swimming': {
+                emoji: '🏊',
+                overview: 'Competitive swimming across freestyle, backstroke, breaststroke and butterfly strokes with individual and relay events.',
+                date: '5 March 2026',
+                venue: 'Werribee Outdoor Olympic Pool',
+                ageGroups: ['9/10', '11', '12/13'],
+                events: ['50m Freestyle', '100m Freestyle', '50m Breaststroke', '100m Breaststroke', '50m Backstroke', '100m Backstroke', '50m Butterfly', '100m Butterfly', '200m Individual Medley', '4x50m Relay'],
+                rules: 'https://www.ssv.vic.edu.au/state/Documents/RulesSwimmingPrimaryandSecondary.pdf',
+                special: 'Hobsons Bay: Events 1-6 from 10:00am (Freestyle, Breaststroke, Backstroke, Butterfly, then Relays). Wyndham: Events 7-12 from 10:15am. Full canteen available.'
+            },
+            'Cross Country': {
+                emoji: '🏃',
+                overview: 'Long-distance running event held on varied terrain, testing endurance across age groups.',
+                date: '20 May 2026',
+                venue: 'TBC',
+                ageGroups: ['9/10', '11', '12/13'],
+                events: ['2km (9/10 years)', '3km (11 years)', '3km (12/13 years)'],
+                rules: 'https://www.ssv.vic.edu.au/state/Documents/RulesCrossCountryPrimaryandSecondary.pdf',
+                special: 'Held at both divisions on same day. Top 10 qualify for Region.'
+            },
+            'Tee Ball': {
+                emoji: '⚾',
+                overview: 'Modified baseball game for younger ages with tee batting.',
+                date: '1 April 2026',
+                venue: 'Various venues',
+                ageGroups: ['P-2'],
+                events: ['Team Competition'],
+                rules: 'https://www.ssv.vic.edu.au/primary/tee-ball',
+                special: 'School-based event only (no divisions).'
+            }
+        };
+
+        const SWIMMING_PROGRAM = {
+            date: 'Thursday, 5 March 2026',
+            venue: 'Werribee Outdoor Olympic Pool, 220 Watton St, Werribee',
+            warmUp: '9:00 AM - 9:45 AM',
+            firstEvent: '10:00 AM',
+            events: [
+                { num: 1, stroke: 'Freestyle', age: '9/10yr Girls', div: 'HB', time: '10:00am' },
+                { num: 2, stroke: 'Freestyle', age: '9/10yr Boys', div: 'HB', time: '10:05am' },
+                { num: 3, stroke: 'Freestyle', age: '11yr Girls', div: 'HB', time: '10:10am' },
+                { num: 4, stroke: 'Freestyle', age: '11yr Boys', div: 'HB', time: '10:15am' },
+                { num: 5, stroke: 'Freestyle', age: '12/13yr Girls', div: 'HB', time: '10:20am' },
+                { num: 6, stroke: 'Freestyle', age: '12/13yr Boys', div: 'HB', time: '10:25am' },
+                { num: 7, stroke: 'Freestyle', age: '9/10yr Girls', div: 'Wyndham', time: '10:30am' },
+                { num: 8, stroke: 'Freestyle', age: '9/10yr Boys', div: 'Wyndham', time: '10:35am' },
+                { num: 9, stroke: 'Freestyle', age: '11yr Girls', div: 'Wyndham', time: '10:40am' },
+                { num: 10, stroke: 'Freestyle', age: '11yr Boys', div: 'Wyndham', time: '10:45am' },
+                { num: 11, stroke: 'Freestyle', age: '12/13yr Girls', div: 'Wyndham', time: '10:50am' },
+                { num: 12, stroke: 'Freestyle', age: '12/13yr Boys', div: 'Wyndham', time: '10:55am' },
+                { num: 13, stroke: 'Breaststroke', age: '9/10yr Girls', div: 'HB', time: '11:00am' },
+                { num: 14, stroke: 'Breaststroke', age: '9/10yr Boys', div: 'HB', time: '11:05am' },
+                { num: 15, stroke: 'Breaststroke', age: '11yr Girls', div: 'HB', time: '11:10am' },
+                { num: 16, stroke: 'Breaststroke', age: '11yr Boys', div: 'HB', time: '11:15am' },
+                { num: 17, stroke: 'Breaststroke', age: '12/13yr Girls', div: 'HB', time: '11:20am' },
+                { num: 18, stroke: 'Breaststroke', age: '12/13yr Boys', div: 'HB', time: '11:25am' },
+                { num: 19, stroke: 'Breaststroke', age: '9/10yr Girls', div: 'Wyndham', time: '11:30am' },
+                { num: 20, stroke: 'Breaststroke', age: '9/10yr Boys', div: 'Wyndham', time: '11:35am' },
+                { num: 21, stroke: 'Breaststroke', age: '11yr Girls', div: 'Wyndham', time: '11:40am' },
+                { num: 22, stroke: 'Breaststroke', age: '11yr Boys', div: 'Wyndham', time: '11:45am' },
+                { num: 23, stroke: 'Breaststroke', age: '12/13yr Girls', div: 'Wyndham', time: '11:50am' },
+                { num: 24, stroke: 'Breaststroke', age: '12/13yr Boys', div: 'Wyndham', time: '11:55am' },
+                { num: 'BREAK', stroke: 'LUNCH BREAK', age: '', div: '', time: '12:00pm' },
+                { num: 25, stroke: 'Backstroke', age: '9/10yr Girls', div: 'HB', time: '12:30pm' },
+                { num: 26, stroke: 'Backstroke', age: '9/10yr Boys', div: 'HB', time: '12:35pm' },
+                { num: 27, stroke: 'Backstroke', age: '11yr Girls', div: 'HB', time: '12:40pm' },
+                { num: 28, stroke: 'Backstroke', age: '11yr Boys', div: 'HB', time: '12:45pm' },
+                { num: 29, stroke: 'Backstroke', age: '12/13yr Girls', div: 'HB', time: '12:50pm' },
+                { num: 30, stroke: 'Backstroke', age: '12/13yr Boys', div: 'HB', time: '12:55pm' },
+                { num: 31, stroke: 'Backstroke', age: '9/10yr Girls', div: 'Wyndham', time: '1:00pm' },
+                { num: 32, stroke: 'Backstroke', age: '9/10yr Boys', div: 'Wyndham', time: '1:05pm' },
+                { num: 33, stroke: 'Backstroke', age: '11yr Girls', div: 'Wyndham', time: '1:10pm' },
+                { num: 34, stroke: 'Backstroke', age: '11yr Boys', div: 'Wyndham', time: '1:15pm' },
+                { num: 35, stroke: 'Backstroke', age: '12/13yr Girls', div: 'Wyndham', time: '1:20pm' },
+                { num: 36, stroke: 'Backstroke', age: '12/13yr Boys', div: 'Wyndham', time: '1:25pm' },
+                { num: 37, stroke: 'Butterfly', age: '9/10yr Girls', div: 'HB', time: '1:30pm' },
+                { num: 38, stroke: 'Butterfly', age: '9/10yr Boys', div: 'HB', time: '1:35pm' },
+                { num: 39, stroke: 'Butterfly', age: '11yr Girls', div: 'HB', time: '1:40pm' },
+                { num: 40, stroke: 'Butterfly', age: '11yr Boys', div: 'HB', time: '1:45pm' },
+                { num: 41, stroke: 'Butterfly', age: '12/13yr Girls', div: 'HB', time: '1:50pm' },
+                { num: 42, stroke: 'Butterfly', age: '12/13yr Boys', div: 'HB', time: '1:55pm' },
+                { num: 43, stroke: 'Butterfly', age: '9/10yr Girls', div: 'Wyndham', time: '2:00pm' },
+                { num: 44, stroke: 'Butterfly', age: '9/10yr Boys', div: 'Wyndham', time: '2:05pm' },
+                { num: 45, stroke: 'Butterfly', age: '11yr Girls', div: 'Wyndham', time: '2:10pm' },
+                { num: 46, stroke: 'Butterfly', age: '11yr Boys', div: 'Wyndham', time: '2:15pm' },
+                { num: 47, stroke: 'Butterfly', age: '12/13yr Girls', div: 'Wyndham', time: '2:20pm' },
+                { num: 48, stroke: 'Butterfly', age: '12/13yr Boys', div: 'Wyndham', time: '2:25pm' },
+                { num: 'RELAYS', stroke: 'MEDLEY RELAY', age: 'All ages', div: 'Both', time: '2:30pm' },
+                { num: 'RELAYS', stroke: '4x50m FREESTYLE RELAY', age: 'All ages', div: 'Both', time: '3:00pm' },
+            ],
+            canteen: [
+                { item: 'Cheese Toastie', price: 3.50, avail: 'until 10am' },
+                { item: 'Ham & Cheese Toastie', price: 3.50, avail: 'until 10am' },
+                { item: 'Hot Dog', price: 4.00, avail: 'from 10:30am' },
+                { item: 'Pies', price: 5.00, avail: 'from 10:30am' },
+                { item: 'Sausage Rolls', price: 4.00, avail: 'from 10:30am' },
+                { item: 'Veggie Pasties', price: 5.00, avail: 'from 10:30am' },
+                { item: 'Dim Sims', price: 1.50, avail: 'from 10:30am' },
+                { item: 'Salad Rolls', price: 7.50, avail: '' },
+                { item: 'Ham & Salad Rolls', price: 7.50, avail: '' },
+                { item: 'Water/Juice', price: 2.50, avail: '' },
+                { item: 'Milk Boxes', price: 4.00, avail: '' },
+                { item: 'Soft Drink', price: 3.00, avail: '' },
+                { item: 'Gatorade', price: 4.50, avail: '' },
+                { item: 'Brownies', price: 4.00, avail: '' },
+                { item: 'Donuts', price: 4.00, avail: '' },
+                { item: 'Chocolate', price: 2.50, avail: '' },
+                { item: 'Chips', price: 3.00, avail: '' },
+                { item: 'Fruit', price: 1.00, avail: '' },
+                { item: 'Zooper Doopers', price: 1.00, avail: '' },
+                { item: 'Sour Straps/Pythons', price: 1.00, avail: '' },
+            ]
+        };
+
+        const SCHOOLS_DATA = [
+            // Hobsons Bay Division - Altona District
+            { name: 'Altona PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Altona North PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Altona Gate PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Bayside PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Seaholme PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Harrington PS', district: 'Altona', division: 'HB', colour: '#DC2626', contacts: 'PE Coordinator' },
+            // Hobsons Bay Division - Laverton District
+            { name: 'Laverton PS', district: 'Laverton', division: 'HB', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Laverton Creek PS', district: 'Laverton', division: 'HB', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Westona PS', district: 'Laverton', division: 'HB', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Williams Landing PS', district: 'Laverton', division: 'HB', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Truganina South PS', district: 'Laverton', division: 'HB', colour: '#2563EB', contacts: 'PE Coordinator' },
+            // Hobsons Bay Division - Point Cook District
+            { name: 'Point Cook PS', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Carranballac PS', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Alamanda K-9', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Featherbrook PS', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Saltwater PS', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Homestead PS', district: 'Point Cook', division: 'HB', colour: '#16A34A', contacts: 'PE Coordinator' },
+            // Hobsons Bay Division - Williamstown District
+            { name: 'Williamstown PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Williamstown North PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Newport Lakes PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Newport Gardens PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Spotswood PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'The Grange PS', district: 'Williamstown', division: 'HB', colour: '#D4A843', contacts: 'PE Coordinator' },
+            // Wyndham Division - Hoppers Crossing District
+            { name: 'Hoppers Crossing PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Mossfiel PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Glen Orden PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Thomas Chirnside PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Cambridge PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            { name: 'Bellbridge PS', district: 'Hoppers Crossing', division: 'Wyndham', colour: '#DC2626', contacts: 'PE Coordinator' },
+            // Wyndham Division - Derrimut District
+            { name: 'Derrimut PS', district: 'Derrimut', division: 'Wyndham', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Burnside PS', district: 'Derrimut', division: 'Wyndham', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Iramoo PS', district: 'Derrimut', division: 'Wyndham', colour: '#2563EB', contacts: 'PE Coordinator' },
+            { name: 'Wyndham Park PS', district: 'Derrimut', division: 'Wyndham', colour: '#2563EB', contacts: 'PE Coordinator' },
+            // Wyndham Division - Tarneit District
+            { name: 'Tarneit PS', district: 'Tarneit', division: 'Wyndham', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Tarneit Rise PS', district: 'Tarneit', division: 'Wyndham', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Dohertys Creek PS', district: 'Tarneit', division: 'Wyndham', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Baden Powell PS', district: 'Tarneit', division: 'Wyndham', colour: '#16A34A', contacts: 'PE Coordinator' },
+            { name: 'Tarneit Central PS', district: 'Tarneit', division: 'Wyndham', colour: '#16A34A', contacts: 'PE Coordinator' },
+            // Wyndham Division - Truganina District
+            { name: 'Truganina PS', district: 'Truganina', division: 'Wyndham', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Westbourne Grammar', district: 'Truganina', division: 'Wyndham', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Dohertys Creek P-9', district: 'Truganina', division: 'Wyndham', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Davis Creek PS', district: 'Truganina', division: 'Wyndham', colour: '#D4A843', contacts: 'PE Coordinator' },
+            { name: 'Strathtulloh PS', district: 'Truganina', division: 'Wyndham', colour: '#D4A843', contacts: 'PE Coordinator' },
+        ];
+
+        // UTILITY FUNCTIONS
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
+        }
+
+        function getCountdown(dateStr) {
+            const eventDate = new Date(dateStr + 'T00:00:00');
+            const diff = Math.floor((eventDate - TODAY) / (1000 * 60 * 60 * 24));
+            if (diff < 0) return null;
+            if (diff === 0) return 'Today!';
+            if (diff === 1) return 'Tomorrow';
+            return `in ${diff} days`;
+        }
+
+        function downloadCSV(data, filename) {
+            const csv = data.map(row =>
+                Object.values(row).map(val =>
+                    typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+                ).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // COMPONENTS
+        function Header({ currentPage, division, onDivisionChange, onPageChange }) {
+            const [searchOpen, setSearchOpen] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [firebaseConnected, setFirebaseConnected] = useState(true);
+
+            useEffect(() => {
+                const unsubscribe = db.ref('.info/connected').on('value', (snap) => {
+                    setFirebaseConnected(snap.val() === true);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const handleSearch = (query) => {
+                setSearchQuery(query);
+                if (query.length < 2) {
+                    setSearchResults([]);
+                    return;
+                }
+
+                const results = [];
+                SCHOOLS_DATA.forEach(school => {
+                    if (school.name.toLowerCase().includes(query.toLowerCase())) {
+                        results.push({ type: 'School', text: school.name, action: () => {} });
+                    }
+                });
+
+                SEED_EVENTS.forEach(event => {
+                    if (event.sport.toLowerCase().includes(query.toLowerCase())) {
+                        results.push({ type: 'Event', text: event.sport, action: () => onPageChange('Calendar') });
+                    }
+                });
+
+                Object.keys(SPORTS_DATA).forEach(sport => {
+                    if (sport.toLowerCase().includes(query.toLowerCase())) {
+                        results.push({ type: 'Sport', text: sport, action: () => onPageChange('Sports') });
+                    }
+                });
+
+                setSearchResults(results.slice(0, 5));
+            };
+
+            return (
+                <div className="header">
+                    <div className="header-left">
+                        <h1>🏅 SSV Hub</h1>
+                        <div className="live-indicator">
+                            <div className="live-dot"></div>
+                            <span>Live</span>
+                        </div>
+                    </div>
+
+                    <div className="search-bar">
+                        <input
+                            type="text"
+                            className="search-input"
+                            placeholder="Search schools, events..."
+                            value={searchQuery}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            onFocus={() => setSearchOpen(true)}
+                            onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+                        />
+                        {searchOpen && searchResults.length > 0 && (
+                            <div className="search-dropdown">
+                                {searchResults.map((result, idx) => (
+                                    <div key={idx} className="search-item" onClick={() => { result.action(); setSearchQuery(''); setSearchOpen(false); }}>
+                                        <div className="search-item-type">{result.type}</div>
+                                        {result.text}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="division-toggle">
+                        <button className={division === 'Both' ? 'active' : ''} onClick={() => onDivisionChange('Both')}>All</button>
+                        <button className={division === 'HB' ? 'active' : ''} onClick={() => onDivisionChange('HB')}>HB</button>
+                        <button className={division === 'Wyndham' ? 'active' : ''} onClick={() => onDivisionChange('Wyndham')}>Wyndham</button>
+                    </div>
+                </div>
+            );
+        }
+
+        function Sidebar({ pages, currentPage, onPageChange }) {
+            const NAV_ITEMS = [
+                { label: '🏠 Home', page: 'Home' },
+                { label: '📅 Calendar', page: 'Calendar' },
+                { label: '⚽ Sports', page: 'Sports' },
+                { label: '🏅 Results', page: 'Results' },
+                { label: '🏫 Schools', page: 'Schools' },
+                { label: '📊 Sheets', page: 'Spreadsheets' },
+                { label: 'ℹ️ Info', page: 'Info' },
+                { label: '🏆 Fixtures', page: 'Fixtures' },
+                { label: '📈 Records', page: 'Records' },
+                { label: '👤 Contacts', page: 'Contacts' },
+                { label: '🎪 Event Day', page: 'EventDay' }
+            ];
+
+            return (
+                <div className="sidebar">
+                    {NAV_ITEMS.map((item) => (
+                        <div
+                            key={item.page}
+                            className={`nav-item ${currentPage === item.page ? 'active' : ''}`}
+                            onClick={() => onPageChange(item.page)}
+                        >
+                            {item.label}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function BottomNav({ currentPage, onPageChange }) {
+            const [showMore, setShowMore] = useState(false);
+            const MAIN_ITEMS = [
+                { label: '🏠', page: 'Home' },
+                { label: '📅', page: 'Calendar' },
+                { label: '🏅', page: 'Results' },
+                { label: '⚽', page: 'Sports' },
+                { label: '⋯', page: 'More' }
+            ];
+            const MORE_ITEMS = [
+                { label: '🏫 Schools', page: 'Schools' },
+                { label: '📊 Sheets', page: 'Spreadsheets' },
+                { label: 'ℹ️ Info', page: 'Info' },
+                { label: '🏆 Fixtures', page: 'Fixtures' },
+                { label: '📈 Records', page: 'Records' },
+                { label: '👤 Contacts', page: 'Contacts' },
+                { label: '🎪 Event Day', page: 'EventDay' }
+            ];
+
+            return (
+                <div className="bottom-nav">
+                    <div className="bottom-nav-main">
+                        {MAIN_ITEMS.map((item) => (
+                            <div
+                                key={item.page}
+                                className={`bottom-nav-item ${currentPage === item.page ? 'active' : ''}`}
+                                onClick={() => {
+                                    if (item.page === 'More') {
+                                        setShowMore(!showMore);
+                                    } else {
+                                        onPageChange(item.page);
+                                        setShowMore(false);
+                                    }
+                                }}
+                            >
+                                <div className="bottom-nav-item-icon">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                    {showMore && (
+                        <div className="bottom-nav-more-menu">
+                            {MORE_ITEMS.map((item) => (
+                                <div
+                                    key={item.page}
+                                    className="nav-item"
+                                    onClick={() => {
+                                        onPageChange(item.page);
+                                        setShowMore(false);
+                                    }}
+                                    style={{ paddingLeft: '1rem' }}
+                                >
+                                    {item.label}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function HomePage({ division }) {
+            const [events, setEvents] = useState([]);
+
+            useEffect(() => {
+                const unsubscribe = db.ref('division_hub/2026/events').on('value', (snap) => {
+                    const data = snap.val();
+                    if (data) {
+                        setEvents(Object.values(data));
+                    } else {
+                        setEvents(SEED_EVENTS.filter(e => (division === 'Both' || e.division.includes(division))));
+                    }
+                });
+                return () => unsubscribe();
+            }, [division]);
+
+            const upcomingEvents = events
+                .filter(e => e.status === 'Upcoming')
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .slice(0, 3);
+
+            const completedCount = events.filter(e => e.status === 'Completed').length;
+            const totalCount = events.length;
+            const seasonProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+            const getThisWeekEvents = () => {
+                const today = new Date();
+                const weekEnd = new Date(today);
+                weekEnd.setDate(weekEnd.getDate() + 7);
+                return events
+                    .filter(e => {
+                        const eDate = new Date(e.date);
+                        return eDate >= today && eDate <= weekEnd;
+                    })
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+            };
+
+            const thisWeekEvents = getThisWeekEvents();
+
+            return (
+                <div className="content">
+                    <div className="hero">
+                        <h1>Welcome to SSV Division Hub</h1>
+                        <p>Your central hub for all division sport competition management</p>
+                    </div>
+
+                    <div className="card">
+                        <h3>📊 Season Progress</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                    <strong>Events Completed</strong>
+                                    <strong>{completedCount} / {totalCount}</strong>
+                                </div>
+                                <div style={{ width: '100%', height: '24px', background: 'var(--border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${seasonProgress}%`,
+                                        background: `linear-gradient(90deg, var(--secondary), var(--success))`,
+                                        transition: 'width 0.3s ease'
+                                    }}></div>
+                                </div>
+                                <p style={{ marginTop: '0.5rem', color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                                    {seasonProgress}% of the 2026 season complete
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {thisWeekEvents.length > 0 && (
+                        <div className="card">
+                            <h3>🎯 This Week's Focus</h3>
+                            <p style={{ marginBottom: '1rem', color: 'var(--text-light)' }}>Events scheduled for the next 7 days</p>
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                                {thisWeekEvents.map((event, idx) => {
+                                    const countdown = getCountdown(event.date);
+                                    return (
+                                        <div key={idx} style={{
+                                            padding: '1rem',
+                                            background: '#F9FAFB',
+                                            borderLeft: '4px solid var(--secondary)',
+                                            borderRadius: '0.5rem',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '1rem' }}>{event.sport}</div>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                                    {formatDate(event.date)} at {event.time}
+                                                </div>
+                                            </div>
+                                            {countdown && (
+                                                <div style={{
+                                                    padding: '0.5rem 1rem',
+                                                    background: 'var(--secondary)',
+                                                    color: 'white',
+                                                    borderRadius: '0.375rem',
+                                                    fontWeight: 600,
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {countdown}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="card">
+                        <h3>⏰ Coming Up Next</h3>
+                        <div className="events-grid">
+                            {upcomingEvents.map((event, idx) => {
+                                const countdown = getCountdown(event.date);
+                                return (
+                                    <div key={idx} className="event-card">
+                                        <div className="event-card-header">
+                                            <div className="sport">{event.sport}</div>
+                                            <div className="status-badge">{event.status}</div>
+                                        </div>
+                                        <div className="event-card-body">
+                                            <div className="event-detail">
+                                                <span className="label">Date:</span>
+                                                <span className="value">{formatDate(event.date)}</span>
+                                            </div>
+                                            <div className="event-detail">
+                                                <span className="label">Time:</span>
+                                                <span className="value">{event.time}</span>
+                                            </div>
+                                            {countdown && <div className="countdown">{countdown}</div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h3>⚡ Quick Actions</h3>
+                        <div className="quick-actions">
+                            <div className="quick-action-btn" onClick={() => window.location.hash = '#Results'}>
+                                <div className="quick-action-icon">📝</div>
+                                Enter Results
+                            </div>
+                            <div className="quick-action-btn" onClick={() => window.location.hash = '#Calendar'}>
+                                <div className="quick-action-icon">📅</div>
+                                View Calendar
+                            </div>
+                            <div className="quick-action-btn" onClick={() => window.location.hash = '#Schools'}>
+                                <div className="quick-action-icon">🏫</div>
+                                Schools Directory
+                            </div>
+                            <div className="quick-action-btn" onClick={() => window.location.hash = '#Spreadsheets'}>
+                                <div className="quick-action-icon">📊</div>
+                                Download Spreadsheets
+                            </div>
+                            <div className="quick-action-btn" onClick={() => window.location.hash = '#EventDay'}>
+                                <div className="quick-action-icon">🎪</div>
+                                Event Day Mode
+                            </div>
+                            <a className="quick-action-btn" href="https://paddygallivan.github.io/district-sport/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                <div className="quick-action-icon">🏟️</div>
+                                Willy District Sport
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function CalendarPage({ division }) {
+            const [events, setEvents] = useState([]);
+            const [viewMode, setViewMode] = useState('list');
+
+            useEffect(() => {
+                const unsubscribe = db.ref('division_hub/2026/events').on('value', (snap) => {
+                    const data = snap.val();
+                    if (data) {
+                        setEvents(Object.values(data));
+                    } else {
+                        setEvents(SEED_EVENTS);
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const filteredEvents = events.filter(e => division === 'Both' || e.division.includes(division));
+            const sortedEvents = filteredEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const getEventsByTerm = (term) => {
+                const startDate = new Date(term.start);
+                const endDate = new Date(term.end);
+                return sortedEvents.filter(e => {
+                    const eDate = new Date(e.date);
+                    return eDate >= startDate && eDate <= endDate;
+                });
+            };
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>📅 Event Calendar</h3>
+                        <div className="btn-group">
+                            <button className="btn-secondary btn-small" onClick={() => setViewMode('list')} style={{ background: viewMode === 'list' ? 'var(--secondary)' : 'white', color: viewMode === 'list' ? 'white' : 'var(--secondary)' }}>List View</button>
+                            <button className="btn-secondary btn-small" onClick={() => setViewMode('term')} style={{ background: viewMode === 'term' ? 'var(--secondary)' : 'white', color: viewMode === 'term' ? 'white' : 'var(--secondary)' }}>Term View</button>
+                            <button className="btn-secondary btn-small" onClick={() => window.print()}>🖨️ Print</button>
+                        </div>
+
+                        {viewMode === 'list' ? (
+                            <div className="table-container" style={{ marginTop: '1rem' }}>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Sport</th>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Venue</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sortedEvents.map((event, idx) => (
+                                            <tr key={idx}>
+                                                <td><strong>{event.sport}</strong></td>
+                                                <td>{formatDate(event.date)}</td>
+                                                <td>{event.time}</td>
+                                                <td>{event.venue}</td>
+                                                <td><span className="qualification-badge" style={{ background: event.status === 'Completed' ? '#6B7280' : '#10B981' }}>{event.status}</span></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div style={{ marginTop: '1rem' }}>
+                                {TERMS.map((term, tidx) => (
+                                    <div key={tidx} style={{ marginBottom: '2rem', padding: '1.5rem', background: '#F9FAFB', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+                                        <h4 style={{ marginBottom: '1rem', color: 'var(--primary)' }}>{term.name} ({formatDate(term.start)} - {formatDate(term.end)})</h4>
+                                        <div className="table-container">
+                                            <table style={{ fontSize: '0.9rem' }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Sport</th>
+                                                        <th>Date</th>
+                                                        <th>Time</th>
+                                                        <th>Venue</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {getEventsByTerm(term).length > 0 ? (
+                                                        getEventsByTerm(term).map((event, idx) => (
+                                                            <tr key={idx}>
+                                                                <td><strong>{event.sport}</strong></td>
+                                                                <td>{formatDate(event.date)}</td>
+                                                                <td>{event.time}</td>
+                                                                <td>{event.venue}</td>
+                                                                <td><span className="qualification-badge" style={{ background: event.status === 'Completed' ? '#6B7280' : '#10B981' }}>{event.status}</span></td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-light)', padding: '1rem' }}>No events this term</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function ResultsPage({ division }) {
+            const [activeTab, setActiveTab] = useState('district');
+            const [districtResults, setDistrictResults] = useState([]);
+            const [divisionResults, setDivisionResults] = useState([]);
+            const [regionQualifiers, setRegionQualifiers] = useState([]);
+            const [selectedSport, setSelectedSport] = useState('Swimming');
+            const [selectedAgeGroup, setSelectedAgeGroup] = useState('');
+            const [selectedGender, setSelectedGender] = useState('');
+            const [selectedDistrict, setSelectedDistrict] = useState('');
+            const [showPinPrompt, setShowPinPrompt] = useState(false);
+            const [pin, setPin] = useState('');
+
+            useEffect(() => {
+                const unsubscribe = db.ref(`division_hub/2026/${selectedSport}/districts`).on('value', (snap) => {
+                    const data = snap.val();
+                    if (data) {
+                        const formatted = [];
+                        Object.entries(data).forEach(([district, events]) => {
+                            if (events.results) {
+                                Object.entries(events.results).forEach(([key, result]) => {
+                                    formatted.push({ ...result, district });
+                                });
+                            }
+                        });
+                        setDistrictResults(formatted);
+
+                        const divisionEntries = generateDivisionEntries(formatted);
+                        setDivisionResults(divisionEntries);
+
+                        const regionQuals = generateRegionQualifiers(divisionEntries);
+                        setRegionQualifiers(regionQuals);
+                    }
+                });
+                return () => unsubscribe();
+            }, [selectedSport]);
+
+            const generateDivisionEntries = (districtData) => {
+                const grouped = {};
+                districtData.forEach(result => {
+                    const key = `${result.event}-${result.ageGroup}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(result);
+                });
+
+                const entries = [];
+                Object.entries(grouped).forEach(([key, results]) => {
+                    const sorted = results.sort((a, b) => {
+                        const aPlace = a.results?.[0]?.place || 999;
+                        const bPlace = b.results?.[0]?.place || 999;
+                        return aPlace - bPlace;
+                    });
+                    sorted.slice(0, 2).forEach((r, idx) => {
+                        entries.push({ ...r, divisionPlace: idx + 1, type: 'division' });
+                    });
+                });
+                return entries;
+            };
+
+            const generateRegionQualifiers = (divisionData) => {
+                const grouped = {};
+                divisionData.forEach(result => {
+                    const key = `${result.event}-${result.ageGroup}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(result);
+                });
+
+                const qualifiers = [];
+                Object.entries(grouped).forEach(([key, results]) => {
+                    const sorted = results.sort((a, b) => {
+                        const aPlace = a.divisionPlace || 999;
+                        const bPlace = b.divisionPlace || 999;
+                        return aPlace - bPlace;
+                    });
+                    sorted.slice(0, 2).forEach((r, idx) => {
+                        qualifiers.push({ ...r, regionPlace: idx + 1, type: 'region' });
+                    });
+                });
+                return qualifiers;
+            };
+
+            const loadSampleData = () => {
+                if (pin !== '1234') {
+                    alert('Invalid PIN');
+                    return;
+                }
+
+                const sampleResults = {
+                    'Williamstown': {
+                        results: {
+                            '9-10-boys-freestyle': { event: '50m Freestyle', ageGroup: '9/10 Boys', district: 'Williamstown', results: [
+                                { place: 1, name: 'Jack Thompson', time: '38.2s' },
+                                { place: 2, name: 'Oliver Smith', time: '39.8s' }
+                            ]},
+                            '9-10-girls-freestyle': { event: '50m Freestyle', ageGroup: '9/10 Girls', district: 'Williamstown', results: [
+                                { place: 1, name: 'Charlotte Wilson', time: '39.5s' },
+                                { place: 2, name: 'Olivia Brown', time: '41.2s' }
+                            ]},
+                            '11-boys-freestyle': { event: '50m Freestyle', ageGroup: '11 Boys', district: 'Williamstown', results: [
+                                { place: 1, name: 'Harry Anderson', time: '33.5s' },
+                                { place: 2, name: 'Noah Taylor', time: '34.8s' }
+                            ]},
+                            '11-girls-freestyle': { event: '50m Freestyle', ageGroup: '11 Girls', district: 'Williamstown', results: [
+                                { place: 1, name: 'Sophie Harris', time: '35.1s' },
+                                { place: 2, name: 'Amelia Clark', time: '36.4s' }
+                            ]},
+                            '12-13-boys-freestyle': { event: '50m Freestyle', ageGroup: '12/13 Boys', district: 'Williamstown', results: [
+                                { place: 1, name: 'Liam Jackson', time: '30.2s' },
+                                { place: 2, name: 'Charlie White', time: '31.5s' }
+                            ]},
+                            '12-13-girls-freestyle': { event: '50m Freestyle', ageGroup: '12/13 Girls', district: 'Williamstown', results: [
+                                { place: 1, name: 'Mia Thomas', time: '32.8s' },
+                                { place: 2, name: 'Grace Lewis', time: '33.9s' }
+                            ]}
+                        }
+                    },
+                    'Altona': {
+                        results: {
+                            '9-10-boys-freestyle': { event: '50m Freestyle', ageGroup: '9/10 Boys', district: 'Altona', results: [
+                                { place: 1, name: 'Henry Martin', time: '39.1s' },
+                                { place: 2, name: 'Leo Walker', time: '40.5s' }
+                            ]},
+                            '9-10-girls-freestyle': { event: '50m Freestyle', ageGroup: '9/10 Girls', district: 'Altona', results: [
+                                { place: 1, name: 'Chloe Hill', time: '40.3s' },
+                                { place: 2, name: 'Lily Allen', time: '42.0s' }
+                            ]},
+                            '11-boys-freestyle': { event: '50m Freestyle', ageGroup: '11 Boys', district: 'Altona', results: [
+                                { place: 1, name: 'Ethan Young', time: '34.2s' },
+                                { place: 2, name: 'Mason King', time: '35.6s' }
+                            ]},
+                            '11-girls-freestyle': { event: '50m Freestyle', ageGroup: '11 Girls', district: 'Altona', results: [
+                                { place: 1, name: 'Ruby Wright', time: '36.0s' },
+                                { place: 2, name: 'Zoe Scott', time: '37.3s' }
+                            ]},
+                            '12-13-boys-freestyle': { event: '50m Freestyle', ageGroup: '12/13 Boys', district: 'Altona', results: [
+                                { place: 1, name: 'Oscar Green', time: '31.0s' },
+                                { place: 2, name: 'Archie Baker', time: '32.2s' }
+                            ]},
+                            '12-13-girls-freestyle': { event: '50m Freestyle', ageGroup: '12/13 Girls', district: 'Altona', results: [
+                                { place: 1, name: 'Isla Adams', time: '33.2s' },
+                                { place: 2, name: 'Willow Nelson', time: '34.5s' }
+                            ]}
+                        }
+                    }
+                };
+
+                Object.entries(sampleResults).forEach(([district, data]) => {
+                    db.ref(`division_hub/2026/Swimming/districts/${district}`).set(data);
+                });
+
+                alert('Sample data loaded! Refresh the page to see results.');
+                setShowPinPrompt(false);
+                setPin('');
+            };
+
+            const filterResults = (data) => {
+                return data.filter(r =>
+                    (!selectedAgeGroup || r.ageGroup === selectedAgeGroup) &&
+                    (!selectedDistrict || r.district === selectedDistrict)
+                );
+            };
+
+            const tabStyles = {
+                container: {
+                    display: 'flex',
+                    gap: '0.5rem',
+                    marginBottom: '1.5rem',
+                    borderBottom: '1px solid var(--border)',
+                    overflowX: 'auto'
+                },
+                tab: {
+                    padding: '0.75rem 1.25rem',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    color: 'var(--text-light)',
+                    whiteSpace: 'nowrap',
+                    borderBottom: '2px solid transparent',
+                    transition: 'all 0.2s'
+                },
+                tabActive: {
+                    color: 'var(--secondary)',
+                    borderBottomColor: 'var(--secondary)'
+                }
+            };
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>🏅 Results Pipeline</h3>
+                        <div className="btn-group" style={{ marginBottom: '1.5rem' }}>
+                            <button className="btn-secondary btn-small" onClick={() => window.print()}>🖨️ Print</button>
+                            <button className="btn-secondary btn-small" onClick={() => setShowPinPrompt(!showPinPrompt)}>⚙️ Load Sample Data</button>
+                        </div>
+
+                        {showPinPrompt && (
+                            <div style={{ margin: '1rem 0', padding: '1rem', background: '#F3F4F6', borderRadius: '0.5rem' }}>
+                                <input type="password" placeholder="Enter PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ padding: '0.5rem', marginRight: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)' }} />
+                                <button className="btn-primary btn-small" onClick={loadSampleData}>Load</button>
+                            </div>
+                        )}
+
+                        <div className="sports-grid" style={{ marginBottom: '1.5rem' }}>
+                            {Object.keys(SPORTS_DATA).map((sport) => (
+                                <div key={sport} className={`sport-card ${selectedSport === sport ? 'selected' : ''}`} onClick={() => setSelectedSport(sport)}>
+                                    <div className="sport-emoji">{SPORTS_DATA[sport].emoji}</div>
+                                    <div className="sport-name">{sport}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={tabStyles.container}>
+                            {[
+                                { id: 'district', label: '1. District Results', icon: '📍' },
+                                { id: 'divisionEntries', label: '2. Division Entries', icon: '📋' },
+                                { id: 'divisionResults', label: '3. Division Results', icon: '🏆' },
+                                { id: 'regionQualifiers', label: '4. Region Qualifiers', icon: '⭐' },
+                                { id: 'pipeline', label: '5. Pipeline Overview', icon: '🔄' }
+                            ].map((tab) => (
+                                <button key={tab.id} style={{...tabStyles.tab, ...(activeTab === tab.id ? tabStyles.tabActive : {})}} onClick={() => setActiveTab(tab.id)}>
+                                    {tab.icon} {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Age Group</label>
+                                <select value={selectedAgeGroup} onChange={(e) => setSelectedAgeGroup(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}>
+                                    <option value="">All Age Groups</option>
+                                    <option value="9/10 Boys">9/10 Boys</option>
+                                    <option value="9/10 Girls">9/10 Girls</option>
+                                    <option value="11 Boys">11 Boys</option>
+                                    <option value="11 Girls">11 Girls</option>
+                                    <option value="12/13 Boys">12/13 Boys</option>
+                                    <option value="12/13 Girls">12/13 Girls</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>District</label>
+                                <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}>
+                                    <option value="">All Districts</option>
+                                    <option value="Altona">Altona</option>
+                                    <option value="Laverton">Laverton</option>
+                                    <option value="Point Cook">Point Cook</option>
+                                    <option value="Williamstown">Williamstown</option>
+                                    <option value="Hoppers Crossing">Hoppers Crossing</option>
+                                    <option value="Derrimut">Derrimut</option>
+                                    <option value="Tarneit">Tarneit</option>
+                                    <option value="Truganina">Truganina</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {activeTab === 'district' && (
+                            filterResults(districtResults).length > 0 ? (
+                                <div className="table-container">
+                                    <table>
+                                        <thead><tr><th>District</th><th>Event</th><th>Age Group</th><th>Place</th><th>Name</th><th>Time</th></tr></thead>
+                                        <tbody>
+                                            {filterResults(districtResults).map((r, idx) => r.results && r.results.map((result, ridx) => (
+                                                <tr key={`${idx}-${ridx}`}><td>{r.district}</td><td>{r.event}</td><td>{r.ageGroup}</td><td><strong>#{result.place}</strong></td><td>{result.name}</td><td>{result.time}</td></tr>
+                                            )))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : <div className="empty-state"><div className="empty-state-icon">📊</div><h3>No Results Yet</h3><p>District results will appear here once events are completed.</p></div>
+                        )}
+
+                        {activeTab === 'divisionEntries' && (
+                            filterResults(divisionResults).length > 0 ? (
+                                <div className="table-container">
+                                    <table>
+                                        <thead><tr><th>Event</th><th>Age Group</th><th>District</th><th>Athlete</th><th>Qualification</th></tr></thead>
+                                        <tbody>
+                                            {filterResults(divisionResults).map((r, idx) => (
+                                                <tr key={idx}><td>{r.event}</td><td>{r.ageGroup}</td><td>{r.district}</td><td>{r.results?.[0]?.name}</td><td><span style={{background: 'var(--gold-qual)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.85rem'}}>Top 2 Qualify</span></td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : <div className="empty-state"><div className="empty-state-icon">📋</div><h3>No Division Entries Yet</h3><p>Entries auto-generate from district results (top 2 per event).</p></div>
+                        )}
+
+                        {activeTab === 'divisionResults' && (
+                            <div className="empty-state">
+                                <div className="empty-state-icon">🏆</div>
+                                <h3>Division Results Coming Soon</h3>
+                                <p>Results from the division day will appear here once the event is completed.</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'regionQualifiers' && (
+                            filterResults(regionQualifiers).length > 0 ? (
+                                <div className="table-container">
+                                    <table>
+                                        <thead><tr><th>Event</th><th>Age Group</th><th>Athlete</th><th>Region Qualification</th></tr></thead>
+                                        <tbody>
+                                            {filterResults(regionQualifiers).map((r, idx) => (
+                                                <tr key={idx}><td>{r.event}</td><td>{r.ageGroup}</td><td>{r.results?.[0]?.name}</td><td><span style={{background: 'var(--secondary)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.85rem'}}>Region Qualifier</span></td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : <div className="empty-state"><div className="empty-state-icon">⭐</div><h3>No Region Qualifiers Yet</h3><p>Top 2 from division level automatically qualify for region.</p></div>
+                        )}
+
+                        {activeTab === 'pipeline' && (
+                            <div style={{ background: '#F9FAFB', padding: '1.5rem', borderRadius: '0.75rem', border: '1px solid var(--border)' }}>
+                                <p style={{ marginBottom: '1rem', color: 'var(--text-light)' }}>The pipeline shows the qualification pathway from district through to region level.</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.95rem' }}>
+                                    <div style={{padding: '1rem', background: 'white', borderRadius: '0.5rem', flex: 1, textAlign: 'center', fontWeight: 600}}>📍 District<div style={{fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--text-light)', marginTop: '0.5rem'}}>All Competitors</div></div>
+                                    <div style={{fontSize: '1.5rem', color: 'var(--text-light)'}}>→</div>
+                                    <div style={{padding: '1rem', background: 'white', borderRadius: '0.5rem', flex: 1, textAlign: 'center', fontWeight: 600}}>🏆 Division<div style={{fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--text-light)', marginTop: '0.5rem'}}>Top 2 per Event</div></div>
+                                    <div style={{fontSize: '1.5rem', color: 'var(--text-light)'}}>→</div>
+                                    <div style={{padding: '1rem', background: 'white', borderRadius: '0.5rem', flex: 1, textAlign: 'center', fontWeight: 600}}>⭐ Region<div style={{fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--text-light)', marginTop: '0.5rem'}}>Top 2 from Division</div></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function SportsPage() {
+            const [selectedSport, setSelectedSport] = useState(null);
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>⚽ Sports Directory</h3>
+                        <div className="sports-grid">
+                            {Object.entries(SPORTS_DATA).map(([sport, data]) => (
+                                <div
+                                    key={sport}
+                                    className={`sport-card ${selectedSport === sport ? 'selected' : ''}`}
+                                    onClick={() => setSelectedSport(selectedSport === sport ? null : sport)}
+                                >
+                                    <div className="sport-emoji">{data.emoji}</div>
+                                    <div className="sport-name">{sport}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedSport && SPORTS_DATA[selectedSport] && (
+                        <div className="sport-detail-panel">
+                            <h3>{SPORTS_DATA[selectedSport].emoji} {selectedSport}</h3>
+                            <p><strong>Date:</strong> {SPORTS_DATA[selectedSport].date}</p>
+                            <p><strong>Venue:</strong> {SPORTS_DATA[selectedSport].venue}</p>
+                            <p><strong>Overview:</strong> {SPORTS_DATA[selectedSport].overview}</p>
+
+                            <h4>Age Groups</h4>
+                            <ul>
+                                {SPORTS_DATA[selectedSport].ageGroups.map((age, idx) => (
+                                    <li key={idx}>{age} years</li>
+                                ))}
+                            </ul>
+
+                            <h4>Events</h4>
+                            <ul>
+                                {SPORTS_DATA[selectedSport].events.map((event, idx) => (
+                                    <li key={idx}>{event}</li>
+                                ))}
+                            </ul>
+
+                            {selectedSport === 'Swimming' && SWIMMING_PROGRAM && (
+                                <div className="swimming-program">
+                                    <h4>Full Event Program</h4>
+                                    <p><strong>Warm Up:</strong> {SWIMMING_PROGRAM.warmUp}</p>
+                                    <p><strong>First Event:</strong> {SWIMMING_PROGRAM.firstEvent}</p>
+
+                                    <table className="program-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Event #</th>
+                                                <th>Stroke</th>
+                                                <th>Age Group</th>
+                                                <th>Division</th>
+                                                <th>Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {SWIMMING_PROGRAM.events.map((event, idx) => (
+                                                <tr key={idx} className={event.stroke === 'LUNCH BREAK' ? 'lunch-break' : ''}>
+                                                    <td>{event.num}</td>
+                                                    <td>{event.stroke}</td>
+                                                    <td>{event.age}</td>
+                                                    <td>{event.div}</td>
+                                                    <td>{event.time}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    <h4>Canteen Menu</h4>
+                                    <div className="canteen-grid">
+                                        {SWIMMING_PROGRAM.canteen.map((item, idx) => (
+                                            <div key={idx} className="canteen-item">
+                                                <div className="canteen-item-name">{item.item}</div>
+                                                <div className="canteen-item-price">${item.price.toFixed(2)}</div>
+                                                {item.avail && <div className="canteen-item-avail">{item.avail}</div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <h4>Special Notes</h4>
+                            <p>{SPORTS_DATA[selectedSport].special}</p>
+
+                            <a href={SPORTS_DATA[selectedSport].rules} target="_blank" rel="noopener noreferrer" className="pdf-link">
+                                📋 View Rules & Regulations
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function SchoolsPage({ division }) {
+            const filteredSchools = SCHOOLS_DATA.filter(s => division === 'Both' || s.division.includes(division));
+            const groupedByDistrict = filteredSchools.reduce((acc, school) => {
+                if (!acc[school.district]) {
+                    acc[school.district] = [];
+                }
+                acc[school.district].push(school);
+                return acc;
+            }, {});
+
+            const districtOrder = ['Altona', 'Laverton', 'Point Cook', 'Williamstown', 'Hoppers Crossing', 'Derrimut', 'Tarneit', 'Truganina'];
+            const sortedDistricts = Object.keys(groupedByDistrict).sort((a, b) => districtOrder.indexOf(a) - districtOrder.indexOf(b));
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>🏫 Schools Directory</h3>
+                        <button className="btn-secondary btn-small" onClick={() => window.print()}>🖨️ Print</button>
+                        {sortedDistricts.map((district) => {
+                            const schools = groupedByDistrict[district];
+                            const colour = schools[0]?.colour || '#1B2A4A';
+                            return (
+                                <div key={district} style={{ marginTop: '1.5rem' }}>
+                                    <div style={{
+                                        background: colour,
+                                        color: 'white',
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '0.5rem',
+                                        marginBottom: '0.75rem',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        fontWeight: 600
+                                    }}>
+                                        <span>{district}</span>
+                                        <span style={{
+                                            background: 'rgba(255,255,255,0.3)',
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '0.25rem',
+                                            fontSize: '0.85rem'
+                                        }}>{schools.length} schools</span>
+                                    </div>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>School</th>
+                                                    <th>Division</th>
+                                                    <th>Contact</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {schools.map((school, idx) => (
+                                                    <tr key={idx}>
+                                                        <td><strong>{school.name}</strong></td>
+                                                        <td>{school.division}</td>
+                                                        <td>{school.contacts}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function SpreadsheetsPage() {
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>📊 Spreadsheets & Downloads</h3>
+                        <p style={{ marginBottom: '1.5rem' }}>Download official spreadsheets for managing and tracking competition data.</p>
+                        <div className="btn-group">
+                            <button className="btn-primary" onClick={() => alert('Coming soon: District Results CSV')}>📥 Export District Results CSV</button>
+                            <button className="btn-primary" onClick={() => alert('Coming soon: Division Entries CSV')}>📥 Export Division Entries CSV</button>
+                            <button className="btn-primary" onClick={() => alert('Coming soon: Region Qualifiers CSV')}>📥 Export Region Qualifiers CSV</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function InfoPage() {
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>ℹ️ Competition Information</h3>
+
+                        <h4>What to Bring</h4>
+                        <p>Schools should prepare the following for competition days:</p>
+                        <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                            <li>First aid kit and any required medications</li>
+                            <li>Team lists and athlete participant forms</li>
+                            <li>Sunscreen and insect repellent</li>
+                            <li>Tent/shade structure for team setup</li>
+                            <li>Water bottles and hydration supplies</li>
+                            <li>Appropriate athletic uniforms and footwear</li>
+                            <li>Change of clothes (especially for water sports)</li>
+                            <li>Mobile phone for emergency contact</li>
+                        </ul>
+
+                        <h4>SSV Costs</h4>
+                        <p style={{ marginBottom: '0.5rem' }}>Standard competition levies per participant:</p>
+                        <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                            <li>SSV Levy: $1.97 per head</li>
+                            <li>Division Levy: $0.65 per head</li>
+                        </ul>
+
+                        <h4>Competition Structure</h4>
+                        <p>The SSV sports pathway progresses through four levels:</p>
+                        <ol style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                            <li><strong>District Level:</strong> School-based teams compete at district level</li>
+                            <li><strong>Division Level:</strong> Individual athletes and relay teams qualify from district results</li>
+                            <li><strong>Region Level:</strong> Top athletes from division level qualify for region competition</li>
+                            <li><strong>State Level:</strong> Elite athletes represent their division at state championships</li>
+                        </ol>
+
+                        <h4>Qualification Rules</h4>
+                        <p><strong>Individual Events:</strong> Top 2 athletes per event per district qualify for division level. Top 2 from division qualify for region.</p>
+                        <p><strong>Relay Events:</strong> Qualification varies - typically top 1-2 teams depending on sport and format.</p>
+
+                        <h4>Age Groups</h4>
+                        <p>Athletes are categorized by age as at 31 December:</p>
+                        <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                            <li><strong>9/10 Years:</strong> Born 2016-2017</li>
+                            <li><strong>11 Years:</strong> Born 2015</li>
+                            <li><strong>12/13 Years:</strong> Born 2013-2014</li>
+                        </ul>
+
+                        <h4>Key Dates & Deadlines</h4>
+                        <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>Important dates for the current competition season. Check Calendar page for event-specific dates.</p>
+                        <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                            <li>District entries: Due 2 weeks before district event</li>
+                            <li>Division entries: Auto-generated from district results</li>
+                            <li>Region qualifiers: Determined from division results</li>
+                        </ul>
+
+                        <h4>System Status</h4>
+                        <div style={{ background: '#E0F2FE', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem' }}>
+                            <p style={{ color: '#0369A1', fontWeight: 600 }}>✓ System Online</p>
+                            <p style={{ color: '#0369A1', fontSize: '0.9rem' }}>All services operational. Real-time updates enabled.</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function RecordsPage() {
+            const DIVISION_RECORDS = [
+                { event: '100m', ageGroup: '9/10 Boys', record: '13.8s', holder: 'Jack Williams', school: 'Point Cook PS', year: 2023, district: 'Point Cook' },
+                { event: '100m', ageGroup: '9/10 Girls', record: '14.2s', holder: 'Mia Johnson', school: 'Altona PS', year: 2022, district: 'Altona' },
+                { event: '100m', ageGroup: '11 Boys', record: '13.1s', holder: 'Liam Chen', school: 'Newport Lakes PS', year: 2024, district: 'Williamstown' },
+                { event: '100m', ageGroup: '11 Girls', record: '13.5s', holder: 'Sophie Taylor', school: 'Seaholme PS', year: 2023, district: 'Altona' },
+                { event: '100m', ageGroup: '12/13 Boys', record: '12.4s', holder: 'Noah Anderson', school: 'Williamstown PS', year: 2024, district: 'Williamstown' },
+                { event: '100m', ageGroup: '12/13 Girls', record: '13.0s', holder: 'Charlotte Lee', school: 'Carranballac PS', year: 2023, district: 'Point Cook' },
+                { event: '200m', ageGroup: '11 Boys', record: '27.5s', holder: 'Oliver Smith', school: 'Laverton PS', year: 2024, district: 'Laverton' },
+                { event: '200m', ageGroup: '11 Girls', record: '28.2s', holder: 'Emma Wilson', school: 'Hoppers Crossing PS', year: 2023, district: 'Hoppers Crossing' },
+                { event: '200m', ageGroup: '12/13 Boys', record: '25.8s', holder: 'James Brown', school: 'Alamanda K-9', year: 2024, district: 'Point Cook' },
+                { event: '200m', ageGroup: '12/13 Girls', record: '26.9s', holder: 'Ava Martin', school: 'Spotswood PS', year: 2022, district: 'Williamstown' },
+                { event: '800m', ageGroup: '11 Boys', record: '2:38', holder: 'Ben Thomas', school: 'The Grange PS', year: 2024, district: 'Williamstown' },
+                { event: '800m', ageGroup: '11 Girls', record: '2:45', holder: 'Lily Harris', school: 'Westona PS', year: 2023, district: 'Laverton' },
+                { event: '800m', ageGroup: '12/13 Boys', record: '2:22', holder: 'Max Jackson', school: 'Saltwater PS', year: 2024, district: 'Point Cook' },
+                { event: '800m', ageGroup: '12/13 Girls', record: '2:35', holder: 'Zoe Clark', school: 'Glen Orden PS', year: 2023, district: 'Hoppers Crossing' },
+                { event: '1500m', ageGroup: '12/13 Boys', record: '4:52', holder: 'Ethan Wright', school: 'Williamstown North PS', year: 2024, district: 'Williamstown' },
+                { event: '1500m', ageGroup: '12/13 Girls', record: '5:15', holder: 'Grace Young', school: 'Featherbrook PS', year: 2023, district: 'Point Cook' },
+                { event: 'Long Jump', ageGroup: '9/10 Boys', record: '3.85m', holder: 'Ryan Phillips', school: 'Bayside PS', year: 2024, district: 'Altona' },
+                { event: 'Long Jump', ageGroup: '9/10 Girls', record: '3.62m', holder: 'Hannah Kim', school: 'Tarneit PS', year: 2023, district: 'Tarneit' },
+                { event: 'Long Jump', ageGroup: '11 Boys', record: '4.25m', holder: 'Daniel White', school: 'Cambridge PS', year: 2024, district: 'Hoppers Crossing' },
+                { event: 'Long Jump', ageGroup: '11 Girls', record: '4.02m', holder: 'Emily Davis', school: 'Harrington PS', year: 2023, district: 'Altona' },
+                { event: 'Long Jump', ageGroup: '12/13 Boys', record: '4.75m', holder: 'Will Thompson', school: 'Point Cook PS', year: 2024, district: 'Point Cook' },
+                { event: 'Long Jump', ageGroup: '12/13 Girls', record: '4.38m', holder: 'Chloe Lee', school: 'Derrimut PS', year: 2022, district: 'Derrimut' },
+                { event: 'Shot Put', ageGroup: '9/10 Boys', record: '7.85m', holder: 'Tom Baker', school: 'Mossfiel PS', year: 2024, district: 'Hoppers Crossing' },
+                { event: 'Shot Put', ageGroup: '9/10 Girls', record: '7.20m', holder: 'Sarah Green', school: 'Williams Landing PS', year: 2023, district: 'Laverton' },
+                { event: 'Shot Put', ageGroup: '12/13 Boys', record: '10.45m', holder: 'Luke Robinson', school: 'Truganina PS', year: 2024, district: 'Truganina' },
+                { event: 'Shot Put', ageGroup: '12/13 Girls', record: '9.30m', holder: 'Ruby Nelson', school: 'Newport Gardens PS', year: 2023, district: 'Williamstown' },
+                { event: 'High Jump', ageGroup: '11 Boys', record: '1.32m', holder: 'Sam Mitchell', school: 'Laverton Creek PS', year: 2024, district: 'Laverton' },
+                { event: 'High Jump', ageGroup: '11 Girls', record: '1.28m', holder: 'Ella Walker', school: 'Burnside PS', year: 2023, district: 'Derrimut' },
+                { event: 'High Jump', ageGroup: '12/13 Boys', record: '1.52m', holder: 'Jack Harrison', school: 'Homestead PS', year: 2024, district: 'Point Cook' },
+                { event: 'High Jump', ageGroup: '12/13 Girls', record: '1.42m', holder: 'Mila Adams', school: 'Iramoo PS', year: 2023, district: 'Derrimut' },
+                { event: '50m Freestyle', ageGroup: '9/10 Boys', record: '35.2s', holder: 'Cooper Hall', school: 'Williamstown PS', year: 2024, district: 'Williamstown' },
+                { event: '50m Freestyle', ageGroup: '9/10 Girls', record: '36.8s', holder: 'Sienna Moore', school: 'Altona Gate PS', year: 2023, district: 'Altona' },
+                { event: '50m Freestyle', ageGroup: '12/13 Boys', record: '28.5s', holder: 'Angus Taylor', school: 'Point Cook PS', year: 2024, district: 'Point Cook' },
+                { event: '50m Freestyle', ageGroup: '12/13 Girls', record: '30.1s', holder: 'Poppy Wilson', school: 'Newport Lakes PS', year: 2023, district: 'Williamstown' },
+                { event: '2km Cross Country', ageGroup: '9/10 Boys', record: '7:45', holder: 'Finn O\'Brien', school: 'The Grange PS', year: 2024, district: 'Williamstown' },
+                { event: '2km Cross Country', ageGroup: '9/10 Girls', record: '8:12', holder: 'Ivy Chen', school: 'Saltwater PS', year: 2023, district: 'Point Cook' },
+                { event: '3km Cross Country', ageGroup: '12/13 Boys', record: '10:35', holder: 'Archie Scott', school: 'Hoppers Crossing PS', year: 2024, district: 'Hoppers Crossing' },
+                { event: '3km Cross Country', ageGroup: '12/13 Girls', record: '11:22', holder: 'Willow King', school: 'Carranballac PS', year: 2023, district: 'Point Cook' },
+            ];
+
+            const [selectedEvent, setSelectedEvent] = useState('');
+            const [selectedAgeGroup, setSelectedAgeGroup] = useState('');
+            const [selectedDistrict, setSelectedDistrict] = useState('');
+
+            const allEvents = [...new Set(DIVISION_RECORDS.map(r => r.event))].sort();
+            const allAgeGroups = [...new Set(DIVISION_RECORDS.map(r => r.ageGroup))].sort();
+            const allDistricts = [...new Set(DIVISION_RECORDS.map(r => r.district))].sort();
+
+            const filteredRecords = DIVISION_RECORDS.filter(r =>
+                (!selectedEvent || r.event === selectedEvent) &&
+                (!selectedAgeGroup || r.ageGroup === selectedAgeGroup) &&
+                (!selectedDistrict || r.district === selectedDistrict)
+            );
+
+            const districtColours = {
+                'Altona': '#DC2626',
+                'Laverton': '#2563EB',
+                'Point Cook': '#16A34A',
+                'Williamstown': '#D4A843',
+                'Hoppers Crossing': '#DC2626',
+                'Derrimut': '#2563EB',
+                'Tarneit': '#16A34A',
+                'Truganina': '#D4A843'
+            };
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>📈 Division Records</h3>
+                        <p style={{ marginBottom: '1.5rem', color: 'var(--text-light)' }}>Historic records for Athletics and Swimming events across Hobsons Bay and Wyndham divisions.</p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Event</label>
+                                <select
+                                    value={selectedEvent}
+                                    onChange={(e) => setSelectedEvent(e.target.value)}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                                >
+                                    <option value="">All Events</option>
+                                    {allEvents.map(e => <option key={e} value={e}>{e}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Age Group</label>
+                                <select
+                                    value={selectedAgeGroup}
+                                    onChange={(e) => setSelectedAgeGroup(e.target.value)}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                                >
+                                    <option value="">All Age Groups</option>
+                                    {allAgeGroups.map(a => <option key={a} value={a}>{a}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>District</label>
+                                <select
+                                    value={selectedDistrict}
+                                    onChange={(e) => setSelectedDistrict(e.target.value)}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                                >
+                                    <option value="">All Districts</option>
+                                    {allDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {filteredRecords.length > 0 ? (
+                            <div className="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Age Group</th>
+                                            <th>Record</th>
+                                            <th>Holder</th>
+                                            <th>School</th>
+                                            <th>District</th>
+                                            <th>Year</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredRecords.map((record, idx) => (
+                                            <tr key={idx}>
+                                                <td><strong>{record.event}</strong></td>
+                                                <td>{record.ageGroup}</td>
+                                                <td><strong>{record.record}</strong></td>
+                                                <td>{record.holder}</td>
+                                                <td>{record.school}</td>
+                                                <td>
+                                                    <span style={{
+                                                        background: districtColours[record.district],
+                                                        color: 'white',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '0.25rem',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 600
+                                                    }}>
+                                                        {record.district}
+                                                    </span>
+                                                </td>
+                                                <td>{record.year}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="empty-state">
+                                <div className="empty-state-icon">📊</div>
+                                <h3>No Records Match Filters</h3>
+                                <p>Try adjusting your filter selections to find records.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function ContactsPage() {
+            const [notes, setNotes] = useState('');
+            const [savedNotes, setSavedNotes] = useState('');
+            const [saveStatus, setSaveStatus] = useState('');
+
+            useEffect(() => {
+                const unsubscribe = db.ref('division_hub/notes').on('value', (snap) => {
+                    if (snap.val()) {
+                        setNotes(snap.val().content || '');
+                        setSavedNotes(snap.val().content || '');
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const saveNotes = () => {
+                db.ref('division_hub/notes').set({
+                    content: notes,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: 'Coordinator'
+                }, (error) => {
+                    if (error) {
+                        setSaveStatus('Failed to save notes');
+                        setTimeout(() => setSaveStatus(''), 3000);
+                    } else {
+                        setSaveStatus('Notes saved successfully!');
+                        setSavedNotes(notes);
+                        setTimeout(() => setSaveStatus(''), 3000);
+                    }
+                });
+            };
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>👤 Coordinator Contacts</h3>
+                        <p style={{ marginBottom: '1.5rem' }}>Key contacts for competition coordination and support.</p>
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Division</th>
+                                        <th>Role</th>
+                                        <th>Contact</th>
+                                        <th>Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Hobsons Bay</td>
+                                        <td>SSV Coordinator</td>
+                                        <td>Paddy Gallivan</td>
+                                        <td>pgallivan@outlook.com</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Wyndham</td>
+                                        <td>SSV Coordinator</td>
+                                        <td>Paddy Gallivan</td>
+                                        <td>pgallivan@outlook.com</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="card" style={{ marginTop: '1.5rem' }}>
+                        <h3>📝 Coordinator Notes</h3>
+                        <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-light)' }}>Save quick notes and reminders. Synced across all sessions.</p>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add quick notes, reminders, or important information..."
+                            style={{
+                                width: '100%',
+                                minHeight: '200px',
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                border: '1px solid var(--border)',
+                                fontFamily: 'monospace',
+                                fontSize: '0.9rem',
+                                marginBottom: '1rem'
+                            }}
+                        />
+                        <div className="btn-group">
+                            <button className="btn-primary" onClick={saveNotes}>💾 Save Notes</button>
+                            <button className="btn-secondary" onClick={() => setNotes(savedNotes)} disabled={notes === savedNotes}>↶ Revert</button>
+                        </div>
+                        {saveStatus && (
+                            <p style={{ marginTop: '1rem', color: saveStatus.includes('successfully') ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                                {saveStatus}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function FixturesPage({ division }) {
+            const [selectedSport, setSelectedSport] = useState('AFL 9s');
+            const [selectedRound, setSelectedRound] = useState('All');
+
+            const TEAM_SPORTS = {
+                'AFL 9s': {
+                    emoji: '🏈',
+                    season: 'Winter',
+                    term: 'Term 2',
+                    teams: 4,
+                    rounds: [
+                        { round: 1, date: '2026-05-06', matches: [
+                            { home: 'Williamstown', away: 'Altona', venue: 'JK Grant Reserve', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Laverton', away: 'Point Cook', venue: 'Laverton Park', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 2, date: '2026-05-13', matches: [
+                            { home: 'Altona', away: 'Point Cook', venue: 'WJ Ginifer Reserve', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Williamstown', away: 'Laverton', venue: 'JK Grant Reserve', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 3, date: '2026-05-20', matches: [
+                            { home: 'Point Cook', away: 'Williamstown', venue: 'Saltwater Reserve', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Altona', away: 'Laverton', venue: 'WJ Ginifer Reserve', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 'GF', date: '2026-05-27', matches: [
+                            { home: '1st', away: '2nd', venue: 'TBC', time: '10:00am', homeScore: null, awayScore: null }
+                        ]}
+                    ]
+                },
+                'Soccer': {
+                    emoji: '⚽',
+                    season: 'Winter',
+                    term: 'Term 2',
+                    teams: 4,
+                    rounds: [
+                        { round: 1, date: '2026-05-07', matches: [
+                            { home: 'Williamstown', away: 'Laverton', venue: 'Newport Park', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Altona', away: 'Point Cook', venue: 'Paisley Park', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 2, date: '2026-05-14', matches: [
+                            { home: 'Laverton', away: 'Altona', venue: 'Laverton Park', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Point Cook', away: 'Williamstown', venue: 'Saltwater Reserve', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 3, date: '2026-05-21', matches: [
+                            { home: 'Williamstown', away: 'Altona', venue: 'Newport Park', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Laverton', away: 'Point Cook', venue: 'Laverton Park', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 'GF', date: '2026-05-28', matches: [
+                            { home: '1st', away: '2nd', venue: 'TBC', time: '10:00am', homeScore: null, awayScore: null }
+                        ]}
+                    ]
+                },
+                'Netball': {
+                    emoji: '🏐',
+                    season: 'Winter',
+                    term: 'Term 2',
+                    teams: 4,
+                    rounds: [
+                        { round: 1, date: '2026-05-06', matches: [
+                            { home: 'Altona', away: 'Williamstown', venue: 'Altona Netball Courts', time: '11:30am', homeScore: null, awayScore: null },
+                            { home: 'Point Cook', away: 'Laverton', venue: 'Saltwater Community Centre', time: '11:30am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 2, date: '2026-05-13', matches: [
+                            { home: 'Williamstown', away: 'Point Cook', venue: 'Williamstown Netball Courts', time: '11:30am', homeScore: null, awayScore: null },
+                            { home: 'Laverton', away: 'Altona', venue: 'Laverton Community Hub', time: '11:30am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 3, date: '2026-05-20', matches: [
+                            { home: 'Point Cook', away: 'Altona', venue: 'Saltwater Community Centre', time: '11:30am', homeScore: null, awayScore: null },
+                            { home: 'Williamstown', away: 'Laverton', venue: 'Williamstown Netball Courts', time: '11:30am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 'GF', date: '2026-05-27', matches: [
+                            { home: '1st', away: '2nd', venue: 'TBC', time: '11:30am', homeScore: null, awayScore: null }
+                        ]}
+                    ]
+                },
+                'Volleyball': {
+                    emoji: '🏐',
+                    season: 'Summer',
+                    term: 'Term 4',
+                    teams: 4,
+                    rounds: [
+                        { round: 1, date: '2026-10-14', matches: [
+                            { home: 'Williamstown', away: 'Altona', venue: 'Bayfit Leisure Centre', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Laverton', away: 'Point Cook', venue: 'Eagle Stadium', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 2, date: '2026-10-21', matches: [
+                            { home: 'Altona', away: 'Point Cook', venue: 'Altona Sports Centre', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Williamstown', away: 'Laverton', venue: 'Bayfit Leisure Centre', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 'GF', date: '2026-10-28', matches: [
+                            { home: '1st', away: '2nd', venue: 'TBC', time: '10:00am', homeScore: null, awayScore: null }
+                        ]}
+                    ]
+                },
+                'Softball': {
+                    emoji: '🥎',
+                    season: 'Summer',
+                    term: 'Term 1',
+                    teams: 4,
+                    rounds: [
+                        { round: 1, date: '2026-03-04', matches: [
+                            { home: 'Williamstown', away: 'Laverton', venue: 'Fearon Reserve', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Altona', away: 'Point Cook', venue: 'WJ Ginifer Reserve', time: '10:00am', homeScore: null, awayScore: null }
+                        ]},
+                        { round: 2, date: '2026-03-11', matches: [
+                            { home: 'Point Cook', away: 'Williamstown', venue: 'Saltwater Reserve', time: '10:00am', homeScore: null, awayScore: null },
+                            { home: 'Laverton', away: 'Altona', venue: 'Laverton Park', time: '10:00am', homeScore: null, awayScore: null }
+                        ]}
+                    ]
+                }
+            };
+
+            const DISTRICT_COLORS = {
+                'Williamstown': '#D4A843', 'Altona': '#DC2626', 'Laverton': '#2563EB', 'Point Cook': '#16A34A',
+                'Hoppers Crossing': '#DC2626', 'Derrimut': '#2563EB', 'Tarneit': '#16A34A', 'Truganina': '#D4A843',
+                '1st': '#10B981', '2nd': '#6B7280', 'TBC': '#9CA3AF'
+            };
+
+            const sport = TEAM_SPORTS[selectedSport];
+            const filteredRounds = selectedRound === 'All' ? sport.rounds : sport.rounds.filter(r => String(r.round) === selectedRound);
+
+            return (
+                <div className="content">
+                    <div className="card">
+                        <h3>🏆 Team Sport Fixtures</h3>
+                        <p style={{ marginBottom: '1rem', color: 'var(--text-light)' }}>District-level round-robin draws for team sports</p>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                            {Object.entries(TEAM_SPORTS).map(([name, data]) => (
+                                <button
+                                    key={name}
+                                    className={selectedSport === name ? 'btn-primary btn-small' : 'btn-secondary btn-small'}
+                                    onClick={() => { setSelectedSport(name); setSelectedRound('All'); }}
+                                >
+                                    {data.emoji} {name}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                                <strong>Season:</strong> {sport.season} ({sport.term})
+                            </span>
+                            <select
+                                value={selectedRound}
+                                onChange={(e) => setSelectedRound(e.target.value)}
+                                style={{ padding: '0.4rem 0.8rem', borderRadius: '0.375rem', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            >
+                                <option value="All">All Rounds</option>
+                                {sport.rounds.map((r, idx) => (
+                                    <option key={idx} value={String(r.round)}>
+                                        {r.round === 'GF' ? 'Grand Final' : `Round ${r.round}`}
+                                    </option>
+                                ))}
+                            </select>
+                            <button className="btn-secondary btn-small" onClick={() => window.print()}>🖨️ Print</button>
+                        </div>
+                    </div>
+
+                    {filteredRounds.map((round, ridx) => (
+                        <div key={ridx} className="card" style={{ marginTop: '1rem' }}>
+                            <h4 style={{ marginBottom: '0.5rem', color: 'var(--primary)' }}>
+                                {round.round === 'GF' ? '🏆 Grand Final' : `Round ${round.round}`}
+                                <span style={{ fontWeight: 400, fontSize: '0.9rem', marginLeft: '0.75rem', color: 'var(--text-light)' }}>
+                                    {formatDate(round.date)}
+                                </span>
+                            </h4>
+                            {round.matches.map((match, midx) => (
+                                <div key={midx} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '1rem', margin: '0.5rem 0', background: '#F9FAFB',
+                                    borderRadius: '0.5rem', border: '1px solid var(--border)', gap: '1rem', flexWrap: 'wrap'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '120px' }}>
+                                        <div style={{
+                                            width: '12px', height: '12px', borderRadius: '50%',
+                                            background: DISTRICT_COLORS[match.home] || '#9CA3AF'
+                                        }}></div>
+                                        <strong>{match.home}</strong>
+                                    </div>
+                                    <div style={{
+                                        padding: '0.25rem 0.75rem', background: 'var(--primary)', color: 'white',
+                                        borderRadius: '0.375rem', fontWeight: 700, fontSize: '0.85rem'
+                                    }}>
+                                        {match.homeScore !== null ? `${match.homeScore} - ${match.awayScore}` : 'vs'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '120px', justifyContent: 'flex-end' }}>
+                                        <strong>{match.away}</strong>
+                                        <div style={{
+                                            width: '12px', height: '12px', borderRadius: '50%',
+                                            background: DISTRICT_COLORS[match.away] || '#9CA3AF'
+                                        }}></div>
+                                    </div>
+                                    <div style={{ width: '100%', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                                        📍 {match.venue} &nbsp;|&nbsp; ⏰ {match.time}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function EventDayPage() {
+            const [volunteers, setVolunteers] = useState({
+                Announcer: '',
+                Timekeeper1: '',
+                Timekeeper2: '',
+                Judges: '',
+                Marshals: '',
+                FirstAid: '',
+                Canteen: '',
+                Registration: '',
+                ResultsEntry: ''
+            });
+
+            const updateVolunteer = (role, name) => {
+                setVolunteers({ ...volunteers, [role]: name });
+            };
+
+            return (
+                <div className="content">
+                    <h2 style={{ marginBottom: '1.5rem' }}>🎪 Event Day Tools</h2>
+
+                    <div className="event-day-grid">
+                        <div className="card">
+                            <h3>🍴 Canteen Menu</h3>
+                            <h4>Food</h4>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Cheese Toastie</span>
+                                <span className="menu-item-price">$3.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Ham & Cheese Toastie</span>
+                                <span className="menu-item-price">$3.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Hot Dog</span>
+                                <span className="menu-item-price">$4.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Pies</span>
+                                <span className="menu-item-price">$5.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Sausage Rolls</span>
+                                <span className="menu-item-price">$4.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Veggie Pasties</span>
+                                <span className="menu-item-price">$5.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Dim Sims</span>
+                                <span className="menu-item-price">$1.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Salad Rolls</span>
+                                <span className="menu-item-price">$7.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Ham & Salad Rolls</span>
+                                <span className="menu-item-price">$7.50</span>
+                            </div>
+
+                            <h4>Drinks</h4>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Water / Juice</span>
+                                <span className="menu-item-price">$2.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Milk Boxes</span>
+                                <span className="menu-item-price">$4.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Soft Drink</span>
+                                <span className="menu-item-price">$3.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Gatorade</span>
+                                <span className="menu-item-price">$4.50</span>
+                            </div>
+
+                            <h4>Snacks</h4>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Brownies</span>
+                                <span className="menu-item-price">$4.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Donuts</span>
+                                <span className="menu-item-price">$4.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Chocolate</span>
+                                <span className="menu-item-price">$2.50</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Chips</span>
+                                <span className="menu-item-price">$3.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Fruit</span>
+                                <span className="menu-item-price">$1.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Zooper Doopers</span>
+                                <span className="menu-item-price">$1.00</span>
+                            </div>
+                            <div className="menu-item">
+                                <span className="menu-item-name">Sour Straps / Pythons</span>
+                                <span className="menu-item-price">$1.00</span>
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            <h3>🏥 Emergency & Medical Info</h3>
+                            <div style={{ background: '#FEE2E2', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                                <p style={{ color: '#DC2626', fontWeight: 600 }}>🚨 Emergency: 000</p>
+                            </div>
+                            <h4>Nearest Hospital</h4>
+                            <p><strong>Werribee Mercy Hospital</strong><br/>300 Princes Hwy, Werribee<br/>(for Swimming & other events)</p>
+
+                            <h4>First Aid</h4>
+                            <p><strong>Tent Location:</strong> Near main entrance</p>
+
+                            <h4>Important</h4>
+                            <p style={{ background: '#FEF3C7', padding: '0.75rem', borderRadius: '0.5rem', color: '#92400E', fontSize: '0.9rem' }}>
+                                ⚠️ All schools must bring their own first aid kit
+                            </p>
+
+                            <h4>SSV Emergency Contact</h4>
+                            <p style={{ color: '#6B7280', fontStyle: 'italic' }}>To be provided by coordinator</p>
+                        </div>
+
+                        <div className="card">
+                            <h3>⏰ Today's Schedule</h3>
+                            <div className="empty-state" style={{ padding: '1.5rem' }}>
+                                <p style={{ color: '#6B7280' }}>Check competition calendar for today's event schedule</p>
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            <h3>👥 Volunteer Roles Checklist</h3>
+                            <ul className="volunteer-list">
+                                {Object.entries({
+                                    'Announcer': 'Announcer',
+                                    'Timekeeper1': 'Timekeepers (1)',
+                                    'Timekeeper2': 'Timekeepers (2)',
+                                    'Judges': 'Judges',
+                                    'Marshals': 'Marshals',
+                                    'FirstAid': 'First Aid',
+                                    'Canteen': 'Canteen',
+                                    'Registration': 'Registration',
+                                    'ResultsEntry': 'Results Entry'
+                                }).map(([key, label]) => (
+                                    <li key={key} className="volunteer-item">
+                                        <input type="checkbox" className="volunteer-checkbox" />
+                                        <input
+                                            type="text"
+                                            placeholder={label}
+                                            value={volunteers[key]}
+                                            onChange={(e) => updateVolunteer(key, e.target.value)}
+                                            className="volunteer-input"
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="card">
+                            <h3>🌤️ Weather</h3>
+                            <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+                                <p style={{ color: '#6B7280', marginBottom: '1rem' }}>Check BOM for latest weather conditions</p>
+                                <a href="https://www.bom.gov.au/" target="_blank" rel="noopener noreferrer" className="btn-primary">
+                                    ☀️ Bureau of Meteorology
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [currentPage, setCurrentPage] = useState('Home');
+            const [division, setDivision] = useState('Both');
+
+            return (
+                <div>
+                    <Header
+                        currentPage={currentPage}
+                        division={division}
+                        onDivisionChange={setDivision}
+                        onPageChange={setCurrentPage}
+                    />
+                    <div className="main-container">
+                        <Sidebar pages={[]} currentPage={currentPage} onPageChange={setCurrentPage} />
+                        {currentPage === 'Home' && <HomePage division={division} />}
+                        {currentPage === 'Calendar' && <CalendarPage division={division} />}
+                        {currentPage === 'Results' && <ResultsPage division={division} />}
+                        {currentPage === 'Sports' && <SportsPage />}
+                        {currentPage === 'Schools' && <SchoolsPage division={division} />}
+                        {currentPage === 'Spreadsheets' && <SpreadsheetsPage />}
+                        {currentPage === 'Fixtures' && <FixturesPage division={division} />}
+                        {currentPage === 'Info' && <InfoPage />}
+                        {currentPage === 'Records' && <RecordsPage />}
+                        {currentPage === 'Contacts' && <ContactsPage />}
+                        {currentPage === 'EventDay' && <EventDayPage />}
+                    </div>
+                    <BottomNav currentPage={currentPage} onPageChange={setCurrentPage} />
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

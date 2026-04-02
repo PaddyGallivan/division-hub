@@ -1,0 +1,1234 @@
+<!-- © 2026 10 16 Pty Ltd. All rights reserved. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>School Sport Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Arial,sans-serif;background:#F8FAFC;min-height:100vh;overflow-x:hidden}
+button{font-family:inherit}
+input,select{font-family:inherit}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.1);margin-bottom:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+.nav{display:flex;gap:4px;padding:8px 12px;background:#1B2A4A;flex-wrap:wrap;align-items:center}
+.nav-btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:14px;background:transparent;color:#94A3B8}
+.nav-btn.active{background:#0D9488;color:#fff}
+.page{padding:16px;max-width:600px;margin:0 auto}
+.page-wide{padding:16px;max-width:900px;margin:0 auto}
+.btn{padding:14px 24px;border-radius:10px;border:none;font-weight:800;cursor:pointer;font-size:16px}
+.btn-primary{background:#1B2A4A;color:#fff}
+.btn-danger{background:#DC2626;color:#fff}
+.btn-teal{background:#0D9488;color:#fff}
+.btn-full{width:100%}
+.input{padding:12px 16px;border-radius:10px;border:2px solid #E2E8F0;font-size:16px;font-weight:500;color:#1B2A4A;outline:none;width:100%;box-sizing:border-box}
+.input:focus{border-color:#0D9488}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.flex{display:flex}
+.flex-wrap{flex-wrap:wrap}
+.gap-4{gap:4px}
+.gap-8{gap:8px}
+.gap-16{gap:16px}
+.mb-4{margin-bottom:4px}
+.mb-8{margin-bottom:8px}
+.mb-12{margin-bottom:12px}
+.mb-16{margin-bottom:16px}
+.center{text-align:center}
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#16A34A;color:#fff;padding:10px 24px;border-radius:10px;font-weight:700;font-size:14px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.pill{padding:6px 10px;border-radius:8px;border:none;white-space:nowrap;font-weight:600;font-size:12px;cursor:pointer;flex-shrink:0}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(27,42,74,.95);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.scroll-row{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.scroll-row::-webkit-scrollbar{display:none}
+.student-card{padding:10px 8px;border-radius:10px;border:2px solid;cursor:pointer;text-align:left;position:relative;display:flex;flex-direction:column;gap:2px;background:#fff}
+.student-card .stripe{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:10px 0 0 10px}
+.entry-panel{background:#fff;border-radius:12px;padding:16px;margin-bottom:8px;border-width:3px;border-style:solid}
+.setup-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.08);max-width:480px;margin:60px auto}
+select{padding:4px 8px;border-radius:6px;border:1px solid #D0D0D0}
+.qr-section{background:#fff;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.station-banner{background:#0D9488;color:#fff;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px;position:sticky;top:0;z-index:20}
+.station-banner-text{font-size:20px;font-weight:800;margin-bottom:4px}
+.station-banner-sub{font-size:13px;opacity:0.9}
+.station-exit{text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.2)}
+.station-exit-link{color:#fff;font-size:12px;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0}
+@media(max-width:400px){.nav-btn{padding:6px 10px;font-size:12px} .page{padding:10px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+<!-- Firebase from CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<!-- QR Code generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo, useRef, memo } = React;
+
+// ─── FIREBASE CONFIG ───
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA-bNl8XqvZ7DQ6YftL9teXbqxYICBlPF8",
+  authDomain: "willy-district-sport.firebaseapp.com",
+  databaseURL: "https://willy-district-sport-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "willy-district-sport",
+  storageBucket: "willy-district-sport.firebasestorage.app",
+};
+
+// ─── CONSTANTS ───
+const HOUSES = {
+  FERGUSON: { color: "#DC2626", bg: "#FEE2E2", text: "FERG", full: "FERGUSON" },
+  GEM: { color: "#2563EB", bg: "#DBEAFE", text: "GEM", full: "GEM" },
+  NELSON: { color: "#16A34A", bg: "#DCFCE7", text: "NELS", full: "NELSON" },
+  REID: { color: "#D4A843", bg: "#FEF9C3", text: "REID", full: "REID" },
+};
+const SCHOOL_AGE_GROUPS = ["9 Yrs", "10 Yrs", "11 Yrs", "12/13 Yrs"];
+const SSV_AGE_GROUPS = ["9/10 Yrs", "11 Yrs", "12/13 Yrs"];
+const GENDERS = ["Boys", "Girls"];
+const TRACK_EVENTS = ["100m", "200m", "800m", "1500m", "80m Hurdles"];
+const FIELD_EVENTS = ["Long Jump", "Triple Jump", "High Jump", "Shot Put", "Discus"];
+const ALL_EVENTS = [...TRACK_EVENTS, ...FIELD_EVENTS];
+const POINTS = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
+const evKey = (ev, ag, gn) => `${ev}|${ag}|${gn}`;
+const fbKey = (k) => k.replace(/[.#$\[\]\/]/g, "_");
+const COMP_LEVELS = ["School", "District", "Division", "Region", "State"];
+const HJ_START_HEIGHTS = {
+  "9 Yrs": { Boys: 1.00, Girls: 0.95 }, "10 Yrs": { Boys: 1.00, Girls: 0.95 },
+  "9/10 Yrs": { Boys: 1.00, Girls: 0.95 }, "11 Yrs": { Boys: 1.00, Girls: 0.95 },
+  "12/13 Yrs": { Boys: 1.05, Girls: 1.00 },
+};
+const MAX_INDIVIDUAL = 2;
+const QUAL_NUMBERS = {
+  School: { individual: 2, relay: 2, note: "Top 2 → District" },
+  District: { individual: 2, relay: 2, note: "District/Division decision" },
+  Division: { individual: 2, relay: 2, note: "Max 2 per event → Region" },
+  Region: { individual: 2, relay: 2, note: "Top 2 per event → State" },
+  State: { individual: 0, relay: 0, note: "Finals" },
+};
+
+// ─── FIREBASE HOOK ───
+function useFirebase(meetId) {
+  const [db, setDb] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const [results, setResults] = useState({});
+  const [students, setStudents] = useState([]);
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    if (!meetId || !window._fbDb) return;
+    const database = window._fbDb;
+    setDb(database);
+
+    const meetRef = database.ref(`meets/${meetId}`);
+
+    // Listen for config
+    meetRef.child("config").on("value", snap => {
+      if (snap.val()) setConfig(snap.val());
+    });
+
+    // Listen for students
+    meetRef.child("students").on("value", snap => {
+      const data = snap.val();
+      if (data) setStudents(Object.values(data));
+    });
+
+    // Listen for results — real-time sync across all devices
+    meetRef.child("results").on("value", snap => {
+      setResults(snap.val() || {});
+    });
+
+    // Connection state
+    database.ref(".info/connected").on("value", snap => {
+      setConnected(!!snap.val());
+    });
+
+    const connRef = database.ref(".info/connected");
+    return () => { meetRef.off(); connRef.off(); };
+  }, [meetId]);
+
+  const saveResult = useCallback((eventKey, studentId, data) => {
+    if (!db || !meetId) return;
+    db.ref(`meets/${meetId}/results/${fbKey(eventKey)}/${studentId}`).set(data);
+  }, [db, meetId]);
+
+  const saveEventResults = useCallback((eventKey, eventData) => {
+    if (!db || !meetId) return;
+    db.ref(`meets/${meetId}/results/${fbKey(eventKey)}`).set(eventData);
+  }, [db, meetId]);
+
+  const saveStudents = useCallback((studentsArr) => {
+    if (!db || !meetId) return;
+    const obj = {};
+    studentsArr.forEach(s => { obj[s.id] = s; });
+    db.ref(`meets/${meetId}/students`).set(obj);
+    setStudents(studentsArr);
+  }, [db, meetId]);
+
+  const saveConfig = useCallback((cfg) => {
+    if (!db || !meetId) return;
+    db.ref(`meets/${meetId}/config`).set(cfg);
+    setConfig(cfg);
+  }, [db, meetId]);
+
+  return { connected, results, students, config, saveResult, saveEventResults, saveStudents, saveConfig, db, setResults };
+}
+
+// ─── SAMPLE STUDENT GENERATOR ───
+function generateStudents(ageGroups) {
+  const fn = {
+    Boys: ["Jack","Oliver","Noah","Liam","Henry","Leo","Charlie","Ethan","Mason","James",
+           "Lucas","Harry","Will","Tom","Max","Oscar","Archie","Cooper","Hugo","Finn",
+           "Riley","Kai","Hunter","Angus","Pat","Ben","Sam","Zac","Tyler","Ryan"],
+    Girls: ["Charlotte","Olivia","Amelia","Isla","Mia","Ava","Grace","Chloe","Lily","Sophie",
+            "Ella","Harper","Zoe","Ruby","Willow","Sienna","Ivy","Matilda","Evie","Poppy",
+            "Phoebe","Scarlett","Aria","Lucy","Stella","Frankie","Millie","Daisy","Hazel","Billie"],
+  };
+  const ln = ["Smith","Jones","Brown","Wilson","Taylor","Anderson","Thomas","Jackson",
+              "White","Harris","Martin","Thompson","Clark","Lewis","Lee","Walker",
+              "Hall","Allen","Young","King","Wright","Scott","Green","Baker","Adams",
+              "Nelson","Hill","Campbell","Mitchell","Roberts","Carter","Phillips"];
+  const out = [];
+  let id = 1;
+  for (const age of ageGroups) {
+    const n = age === "9 Yrs" ? 36 : age === "10 Yrs" ? 36 : age === "9/10 Yrs" ? 50 : age === "11 Yrs" ? 26 : 16;
+    for (const gender of GENDERS) {
+      const gc = Math.round(n * (gender === "Boys" ? 0.55 : 0.45));
+      const houses = Object.keys(HOUSES);
+      for (let i = 0; i < gc; i++) {
+        out.push({
+          id: id++, firstName: fn[gender][i % fn[gender].length],
+          lastName: ln[(i * 7 + id) % ln.length],
+          ageGroup: age, gender, house: houses[i % 4],
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// ─── GET STATION PARAMS FROM URL ───
+function getStationParams() {
+  const params = new URLSearchParams(window.location.search);
+  const station = params.get("station");
+  if (!station) return null;
+  const parts = station.split("|");
+  if (parts.length !== 3) return null;
+  return { event: parts[0], ageGroup: parts[1], gender: parts[2] };
+}
+
+// ═══════════════════════════════════════
+// STAFF ENTRY VIEW
+// ═══════════════════════════════════════
+const StaffView = memo(function StaffView({
+  selEvent, selAge, selGender, results, students, showToast,
+  saveResult, saveEventResults, setSelEvent, setSelAge, setSelGender,
+  compLevel, ageGroups, isStationMode, exitStationMode,
+}) {
+  const [search, setSearch] = useState("");
+  const [activeStudent, setActiveStudent] = useState(null);
+  const [inputVal, setInputVal] = useState("");
+  const [att1, setAtt1] = useState(""); const [att2, setAtt2] = useState(""); const [att3, setAtt3] = useState("");
+  const [hjHeights, setHjHeights] = useState([]);
+  const [hjNewHeight, setHjNewHeight] = useState("");
+  const [recentEntries, setRecentEntries] = useState([]);
+  const [podium, setPodium] = useState(null);
+  const [confirmFinish, setConfirmFinish] = useState(false);
+  const [eventLimitWarn, setEventLimitWarn] = useState(null);
+  const [locked, setLocked] = useState(isStationMode);
+  const inputRef = useRef(null);
+  const att1Ref = useRef(null);
+  const searchRef = useRef(null);
+
+  const ev = selEvent, ag = selAge, gn = selGender;
+  const key = evKey(ev, ag, gn);
+  const fKey = fbKey(key);
+  const isTrack = TRACK_EVENTS.includes(ev);
+  const isHJ = ev === "High Jump";
+  const isField = FIELD_EVENTS.includes(ev) && !isHJ;
+  const saved = results[fKey] || {};
+
+  const levelEvents = compLevel === "School"
+    ? ["100m", "200m", "Long Jump", "Triple Jump", "High Jump", "Shot Put"]
+    : ALL_EVENTS;
+
+  const list = useMemo(() =>
+    students.filter(s => s.ageGroup === ag && s.gender === gn)
+      .sort((a, b) => a.lastName.localeCompare(b.lastName))
+  , [students, ag, gn]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return list;
+    const q = search.toLowerCase().trim();
+    return list.filter(s =>
+      s.firstName.toLowerCase().startsWith(q) ||
+      s.lastName.toLowerCase().startsWith(q) ||
+      (s.house && s.house.toLowerCase().startsWith(q)) ||
+      (s.school && s.school.toLowerCase().startsWith(q))
+    );
+  }, [list, search]);
+
+  const evColor = isTrack ? "#DC2626" : isHJ ? "#7C3AED" : "#16A34A";
+  const unit = isTrack ? "s" : "m";
+
+  const countStudentEvents = (sid) => {
+    let c = 0;
+    for (const k of Object.keys(results)) {
+      if (k === fKey) continue;
+      if (results[k]?.[sid]) c++;
+    }
+    return c;
+  };
+
+  const tapStudent = (s) => {
+    const already = !!saved[s.id];
+    if (!already && ev !== "4x100m Relay") {
+      const cnt = countStudentEvents(s.id);
+      if (cnt >= MAX_INDIVIDUAL) {
+        setEventLimitWarn(`${s.firstName} ${s.lastName} already has ${cnt} events (max ${MAX_INDIVIDUAL}). Editing anyway.`);
+      } else { setEventLimitWarn(null); }
+    } else { setEventLimitWarn(null); }
+
+    setActiveStudent(s);
+    const prev = saved[s.id];
+    if (isTrack) {
+      setInputVal(prev?.value || "");
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else if (isField) {
+      const atts = prev?.attempts || ["", "", ""];
+      setAtt1(atts[0] || ""); setAtt2(atts[1] || ""); setAtt3(atts[2] || "");
+      setTimeout(() => att1Ref.current?.focus(), 50);
+    } else if (isHJ) {
+      setHjHeights(prev?.heights || []);
+      const startH = HJ_START_HEIGHTS[ag]?.[gn] || 0.95;
+      setHjNewHeight(prev?.heights?.length > 0 ? "" : startH.toFixed(2));
+    }
+  };
+
+  const bestAttempt = (a1, a2, a3) => {
+    const vals = [a1, a2, a3].map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0);
+    return vals.length > 0 ? Math.max(...vals) : null;
+  };
+
+  const hjBest = (heights) => {
+    const cleared = heights.filter(h => h.result === "O").map(h => parseFloat(h.height));
+    return cleared.length > 0 ? Math.max(...cleared) : null;
+  };
+
+  const saveOne = () => {
+    if (!activeStudent) return;
+    let bestVal = null, extra = {};
+    if (isTrack) {
+      if (!inputVal) return;
+      const t = parseFloat(inputVal);
+      if (isNaN(t) || t <= 0) { showToast("Enter a valid time > 0"); return; }
+      bestVal = inputVal;
+    } else if (isField) {
+      const best = bestAttempt(att1, att2, att3);
+      if (best === null) return;
+      bestVal = best.toFixed(2);
+      extra = { attempts: [att1, att2, att3] };
+    } else if (isHJ) {
+      const best = hjBest(hjHeights);
+      if (hjHeights.length === 0) return;
+      bestVal = best !== null ? best.toFixed(2) : "NH";
+      extra = { heights: hjHeights };
+    }
+    saveResult(key, activeStudent.id, { value: bestVal, place: 0, ...extra });
+    setRecentEntries(p => [{ student: activeStudent, value: bestVal, time: Date.now() }, ...p].slice(0, 5));
+    showToast(`${activeStudent.firstName} — ${bestVal}${bestVal === "NH" ? "" : unit}`);
+    setActiveStudent(null);
+    setInputVal(""); setAtt1(""); setAtt2(""); setAtt3("");
+    setHjHeights([]); setHjNewHeight("");
+    setSearch("");
+    setTimeout(() => searchRef.current?.focus(), 50);
+  };
+
+  const addHjAttempt = (result) => {
+    if (!hjNewHeight) return;
+    setHjHeights(p => [...p, { height: hjNewHeight, result }]);
+    if (result === "O") setHjNewHeight((parseFloat(hjNewHeight) + 0.05).toFixed(2));
+  };
+
+  const getAttemptsSorted = (sid) => {
+    const atts = saved[sid]?.attempts || [];
+    return atts.map(a => parseFloat(a)).filter(v => !isNaN(v) && v > 0).sort((a, b) => b - a);
+  };
+
+  const finishSession = () => {
+    const entries = list.filter(s => saved[s.id]?.value).map(s => ({
+      id: s.id, result: parseFloat(saved[s.id].value) || 0, house: s.house, ...s,
+    }));
+    const nhEntries = entries.filter(e => saved[e.id].value === "NH");
+    let validEntries = entries.filter(e => saved[e.id].value !== "NH");
+
+    if (isTrack) {
+      validEntries.sort((a, b) => a.result - b.result);
+    } else if (isField) {
+      validEntries.sort((a, b) => {
+        if (b.result !== a.result) return b.result - a.result;
+        const aAtts = getAttemptsSorted(a.id), bAtts = getAttemptsSorted(b.id);
+        for (let i = 1; i < Math.max(aAtts.length, bAtts.length); i++) {
+          const aVal = aAtts[i] || 0, bVal = bAtts[i] || 0;
+          if (bVal !== aVal) return bVal - aVal;
+        }
+        return 0;
+      });
+    } else {
+      validEntries.sort((a, b) => {
+        if (b.result !== a.result) return b.result - a.result;
+        const tiedH = a.result.toFixed(2);
+        const aHts = saved[a.id]?.heights || [], bHts = saved[b.id]?.heights || [];
+        const aAtT = aHts.filter(h => h.height === tiedH).length;
+        const bAtT = bHts.filter(h => h.height === tiedH).length;
+        if (aAtT !== bAtT) return aAtT - bAtT;
+        const aF = aHts.filter(h => h.result === "X").length;
+        const bF = bHts.filter(h => h.result === "X").length;
+        if (aF !== bF) return aF - bF;
+        return 0;
+      });
+    }
+
+    const updatedEvent = { ...saved };
+    let currentPlace = 1;
+    validEntries.forEach((s, i) => {
+      if (i > 0) {
+        if (isField) { currentPlace = i + 1; }
+        else if (validEntries[i].result !== validEntries[i - 1].result) { currentPlace = i + 1; }
+        else if (isHJ) {
+          const prev = validEntries[i - 1];
+          const tH = s.result.toFixed(2);
+          const sH = saved[s.id]?.heights || [], pH = saved[prev.id]?.heights || [];
+          if (sH.filter(h=>h.height===tH).length !== pH.filter(h=>h.height===tH).length ||
+              sH.filter(h=>h.result==="X").length !== pH.filter(h=>h.result==="X").length) {
+            currentPlace = i + 1;
+          }
+        }
+      }
+      updatedEvent[s.id] = { ...saved[s.id], place: currentPlace };
+      validEntries[i].place = currentPlace;
+    });
+    nhEntries.forEach(s => { updatedEvent[s.id] = { ...saved[s.id], place: 0 }; });
+
+    saveEventResults(key, updatedEvent);
+
+    const podiumData = validEntries.slice(0, 6).map(s => ({
+      student: s, value: saved[s.id].value, place: s.place,
+    }));
+    setPodium(podiumData);
+    setConfirmFinish(false);
+  };
+
+  const doneCount = list.filter(s => saved[s.id]?.value).length;
+
+  // EVENT PICKER — shown when staff first opens, before they pick their event
+  if (!locked && !isStationMode) {
+    return (
+      <div className="page">
+        <div className="card center" style={{ background: "linear-gradient(135deg,#1B2A4A,#0D9488)", color: "#fff", borderRadius: 16, padding: 24 }}>
+          <div style={{ fontSize: 28 }}>📋</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Pick Your Event</div>
+          <div style={{ fontSize: 13, opacity: 0.8 }}>Tap an event to start entering results</div>
+        </div>
+        {ageGroups.map(ag2 => (
+          <div key={ag2}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#1B2A4A", margin: "16px 0 8px", paddingLeft: 4 }}>{ag2}</div>
+            {GENDERS.map(gn2 => (
+              <div key={gn2} style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 4, paddingLeft: 4 }}>{gn2}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                  {levelEvents.map(ev2 => {
+                    const fk2 = fbKey(evKey(ev2, ag2, gn2));
+                    const er2 = results[fk2];
+                    const done = er2 && Object.values(er2).some(r => r && r.place > 0);
+                    const partial = er2 && Object.keys(er2).length > 0 && !done;
+                    const isT = TRACK_EVENTS.includes(ev2);
+                    return (
+                      <button key={ev2} onClick={() => { setSelEvent(ev2); setSelAge(ag2); setSelGender(gn2); setLocked(true); }}
+                        style={{ padding: "12px 6px", borderRadius: 10, border: "2px solid",
+                          borderColor: done ? "#16A34A" : partial ? "#D4A843" : "#E2E8F0",
+                          background: done ? "#F0FDF4" : partial ? "#FFFBEB" : "#fff",
+                          cursor: "pointer", textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isT ? "#DC2626" : "#16A34A" }}>{ev2}</div>
+                        <div style={{ fontSize: 10, color: done ? "#16A34A" : partial ? "#D4A843" : "#94A3B8", marginTop: 2 }}>
+                          {done ? "✓ Done" : partial ? "In progress" : "Not started"}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="page">
+      {/* Locked event banner — tap "Change Event" to go back to picker */}
+      <div style={{ background: evColor, color: "#fff", borderRadius: 12, padding: "10px 16px",
+        textAlign: "center", marginBottom: 8, position: "sticky", top: 0, zIndex: 20 }}>
+        <div className="flex" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{ev}</div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>{ag} {gn}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 28, fontWeight: 900 }}>{doneCount}/{list.length}</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>entered</div>
+          </div>
+        </div>
+        <div style={{ height: 4, background: "rgba(255,255,255,.3)", borderRadius: 2, marginTop: 6 }}>
+          <div style={{ height: "100%", borderRadius: 2, background: "#fff",
+            width: `${list.length > 0 ? (doneCount / list.length) * 100 : 0}%`, transition: "width .3s" }} />
+        </div>
+        {!isStationMode && (
+          <button onClick={() => { setLocked(false); setActiveStudent(null); setSearch(""); }}
+            style={{ marginTop: 8, background: "rgba(255,255,255,.2)", border: "none", color: "#fff",
+              padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            Change Event</button>
+        )}
+        {isStationMode && (
+          <button onClick={exitStationMode}
+            style={{ marginTop: 8, background: "rgba(255,255,255,.15)", border: "none", color: "#fff",
+              padding: "6px 16px", borderRadius: 8, fontSize: 11, cursor: "pointer", opacity: 0.7 }}>
+            Exit Station Mode</button>
+        )}
+      </div>
+
+      {activeStudent && (
+        <div className="entry-panel" style={{ borderColor: evColor, boxShadow: `0 4px 20px ${evColor}30` }}>
+          <div className="flex gap-8 mb-12" style={{ alignItems: "center" }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center",
+              justifyContent: "center", fontWeight: 800, fontSize: 18,
+              background: HOUSES[activeStudent.house]?.bg || "#F1F5F9",
+              color: HOUSES[activeStudent.house]?.color || "#64748B" }}>
+              {activeStudent.firstName[0]}{activeStudent.lastName[0]}
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 20, color: "#1B2A4A" }}>
+                {activeStudent.firstName} {activeStudent.lastName}
+              </div>
+              {activeStudent.house && HOUSES[activeStudent.house] && (
+                <span className="badge" style={{ color: HOUSES[activeStudent.house].color,
+                  background: HOUSES[activeStudent.house].bg }}>{HOUSES[activeStudent.house].full}</span>
+              )}
+              {activeStudent.school && <span className="badge" style={{ color: "#1B2A4A", background: "#F1F5F9", marginLeft: 4 }}>{activeStudent.school}</span>}
+            </div>
+            <button onClick={() => { setActiveStudent(null); setSearch(""); }}
+              style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 24, color: "#94A3B8", cursor: "pointer" }}>✕</button>
+          </div>
+
+          {eventLimitWarn && (
+            <div style={{ padding: "6px 10px", background: "#FEF3C7", border: "1px solid #F59E0B",
+              borderRadius: 8, fontSize: 12, color: "#92400E", marginBottom: 8 }}>⚠ {eventLimitWarn}</div>
+          )}
+
+          {isTrack && (<>
+            <div className="flex gap-8">
+              <input ref={inputRef} type="number" step="0.01" min="0" placeholder="14.52"
+                value={inputVal} onChange={e => setInputVal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveOne()}
+                style={{ flex: 1, padding: "14px 12px", borderRadius: 10, border: `2px solid ${evColor}`,
+                  fontSize: 28, fontWeight: 800, textAlign: "center", color: "#1B2A4A", outline: "none" }} />
+              <button onClick={saveOne} style={{ padding: "14px 24px", borderRadius: 10, border: "none",
+                background: evColor, color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer", minWidth: 80 }}>✓</button>
+            </div>
+            <div className="center" style={{ marginTop: 6, fontSize: 12, color: "#94A3B8" }}>Time in seconds — press Enter or tap ✓</div>
+          </>)}
+
+          {isField && (<>
+            <div className="center" style={{ fontSize: 13, fontWeight: 700, color: "#64748B", marginBottom: 8 }}>3 ATTEMPTS — best counts</div>
+            <div className="flex gap-8 mb-8">
+              {[{ label: "1st", val: att1, set: setAtt1, r: att1Ref },
+                { label: "2nd", val: att2, set: setAtt2, r: null },
+                { label: "3rd", val: att3, set: setAtt3, r: null }].map(a => (
+                <div key={a.label} style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", marginBottom: 4 }}>{a.label}</div>
+                  <input ref={a.r} type="number" step="0.01" min="0"
+                    value={a.val} onChange={e => a.set(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && saveOne()}
+                    style={{ width: "100%", padding: "10px 8px", borderRadius: 8, border: `2px solid ${evColor}`,
+                      fontSize: 20, fontWeight: 700, textAlign: "center", color: "#1B2A4A", outline: "none" }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={saveOne}
+              style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none",
+                background: evColor, color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Save</button>
+          </>)}
+
+          {isHJ && (<>
+            <div className="center" style={{ fontSize: 13, fontWeight: 700, color: "#64748B", marginBottom: 8 }}>CLEARANCES & FAILURES</div>
+            {hjHeights.map((h, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px", background: "#F1F5F9", borderRadius: 8 }}>
+                <span style={{ fontWeight: 700, color: "#1B2A4A" }}>{h.height}m</span>
+                <span style={{ marginLeft: "auto", fontWeight: 700, fontSize: 18, color: h.result === "O" ? "#16A34A" : "#DC2626" }}>
+                  {h.result === "O" ? "✓" : "✕"}
+                </span>
+              </div>
+            ))}
+            <div className="flex gap-4 mb-8">
+              <input type="number" step="0.01" min="0" placeholder="1.00" value={hjNewHeight}
+                onChange={e => setHjNewHeight(e.target.value)}
+                style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "2px solid #7C3AED",
+                  fontSize: 16, fontWeight: 700, textAlign: "center", color: "#1B2A4A", outline: "none" }} />
+              <button onClick={() => addHjAttempt("O")}
+                style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "none", background: "#16A34A",
+                  color: "#fff", fontWeight: 700, cursor: "pointer" }}>✓ Clear</button>
+              <button onClick={() => addHjAttempt("X")}
+                style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "none", background: "#DC2626",
+                  color: "#fff", fontWeight: 700, cursor: "pointer" }}>✕ Fail</button>
+            </div>
+            <button onClick={saveOne}
+              style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none",
+                background: "#7C3AED", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Save</button>
+          </>)}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 8 }}>
+        {!activeStudent && (
+          <input ref={searchRef} type="text" placeholder="Search by name or house..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ padding: "10px 12px", borderRadius: 10, border: "2px solid #E2E8F0",
+              fontSize: 14, fontWeight: 500, color: "#1B2A4A", outline: "none", width: "100%" }} />
+        )}
+      </div>
+
+      <div>
+        {filtered.map(s => {
+          const entry = saved[s.id];
+          const hasEntry = !!entry?.value;
+          return (
+            <div key={s.id} className="student-card" onClick={() => tapStudent(s)}
+              style={{ borderColor: hasEntry ? evColor : "#E2E8F0" }}>
+              <div className="stripe" style={{ background: HOUSES[s.house]?.color || "#E2E8F0" }} />
+              <div className="flex" style={{ alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#1B2A4A" }}>
+                    {s.firstName} {s.lastName}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#94A3B8" }}>{HOUSES[s.house]?.full}</div>
+                </div>
+                {hasEntry && (
+                  <div style={{ fontWeight: 800, fontSize: 14, color: evColor }}>
+                    {entry.value}{entry.value === "NH" ? "" : unit}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!isStationMode && list.filter(s => saved[s.id]?.value).length === list.length && list.length > 0 && (
+        <button onClick={() => setConfirmFinish(true)} className="btn btn-teal btn-full" style={{ marginTop: 16 }}>
+          🏁 Finish & Rank Event</button>
+      )}
+
+      {confirmFinish && (
+        <div className="overlay">
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 400, textAlign: "center" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1B2A4A", marginBottom: 12 }}>Finish Event?</h2>
+            <p style={{ color: "#64748B", fontSize: 14, marginBottom: 16 }}>
+              This will rank all {list.length} entries and send to all screens.
+            </p>
+            <div className="flex gap-8">
+              <button onClick={() => setConfirmFinish(false)} className="btn btn-primary" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={finishSession} className="btn btn-teal" style={{ flex: 1 }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {podium && (
+        <div className="overlay">
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 500, textAlign: "center" }}>
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: evColor, marginBottom: 16 }}>🏆 Podium</h2>
+            <div style={{ marginBottom: 24 }}>
+              {podium.map((p, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: i === 0 ? "#D4A843" : i === 1 ? "#C0C0C0" : "#CD7F32", marginBottom: 4 }}>
+                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                  </div>
+                  <div style={{ fontWeight: 700, color: "#1B2A4A", marginBottom: 2 }}>
+                    {p.student.firstName} {p.student.lastName}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: evColor, marginBottom: 4 }}>
+                    {p.value}{p.value === "NH" ? "" : unit}
+                  </div>
+                  <span className="badge" style={{ color: HOUSES[p.student.house]?.color,
+                    background: HOUSES[p.student.house]?.bg }}>{HOUSES[p.student.house]?.full}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setPodium(null)} className="btn btn-teal btn-full">Done</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════
+// LIVE RESULTS VIEW
+// ═══════════════════════════════════════
+const LiveView = memo(function LiveView({ results, students, compLevel, ageGroups, levelEvents }) {
+  return (
+    <div className="page-wide">
+      <div className="card">
+        <h2 style={{ margin: "0 0 8px", color: "#1B2A4A", fontSize: 18 }}>Live Results</h2>
+        <p style={{ margin: 0, color: "#64748B", fontSize: 13 }}>Tap event to view results</p>
+      </div>
+      {levelEvents.map(ev => (
+        <div key={ev}>
+          <h3 style={{ margin: "16px 0 8px", color: "#1B2A4A", fontSize: 14, fontWeight: 700, padding: "0 16px" }}>{ev}</h3>
+          {ageGroups.map(ag => GENDERS.map(gn => {
+            const fk = fbKey(evKey(ev, ag, gn));
+            const er = results[fk];
+            if (!er) return null;
+            const ranked = Object.entries(er)
+              .map(([sid, data]) => ({
+                student: students.find(s => s.id === parseInt(sid)),
+                data,
+              }))
+              .filter(e => e.student && e.data && e.data.place > 0)
+              .sort((a, b) => a.data.place - b.data.place);
+            if (ranked.length === 0) return null;
+            return (
+              <div key={`${ev}${ag}${gn}`} className="card" style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", marginBottom: 8 }}>{ag} {gn}</div>
+                {ranked.map((r, i) => (
+                  <div key={i} className="flex" style={{ alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontWeight: 700, color: i === 0 ? "#D4A843" : "#64748B", minWidth: 20 }}>{r.data.place}.</span>
+                    <span style={{ flex: 1, fontWeight: 600, color: "#1B2A4A" }}>{r.student.firstName} {r.student.lastName}</span>
+                    <span style={{ fontWeight: 700, color: "#0D9488" }}>
+                      {r.data.value}{r.data.value === "NH" ? "" : TRACK_EVENTS.includes(ev) ? "s" : "m"}
+                    </span>
+                    <span className="badge" style={{ background: HOUSES[r.student.house]?.bg, color: HOUSES[r.student.house]?.color }}>
+                      {HOUSES[r.student.house]?.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          }))}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════
+// CHAMPIONS VIEW
+// ═══════════════════════════════════════
+const ChampionsView = memo(function ChampionsView({ results, students, ageGroups, levelEvents }) {
+  return (
+    <div className="page-wide">
+      <div className="card">
+        <h2 style={{ margin: "0 0 4px", color: "#1B2A4A", fontSize: 20 }}>Champions</h2>
+        <p style={{ margin: 0, color: "#64748B", fontSize: 13 }}>First place in each event</p>
+      </div>
+      {levelEvents.map(ev =>
+        ageGroups.map(ag =>
+          GENDERS.map(gn => {
+            const fk = fbKey(evKey(ev, ag, gn));
+            const er = results[fk];
+            if (!er) return null;
+            const first = Object.entries(er)
+              .map(([sid, data]) => ({ student: students.find(s => s.id === parseInt(sid)), data }))
+              .filter(e => e.student && e.data && e.data.place === 1)
+              .sort((a, b) => (TRACK_EVENTS.includes(ev) ? a : b).data.value - (TRACK_EVENTS.includes(ev) ? b : a).data.value)[0];
+            if (!first) return null;
+            return (
+              <div key={`${ev}${ag}${gn}`} className="card" style={{ borderLeft: `4px solid ${TRACK_EVENTS.includes(ev) ? "#DC2626" : "#16A34A"}` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, color: "#1B2A4A", fontSize: 13 }}>{ev}</span>
+                  <span style={{ fontSize: 11, color: "#64748B" }}>{ag} {gn}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 28, fontWeight: 800 }}>🥇</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, color: "#1B2A4A" }}>{first.student.firstName} {first.student.lastName}</div>
+                    <span className="badge" style={{ color: HOUSES[first.student.house]?.color, background: HOUSES[first.student.house]?.bg }}>
+                      {HOUSES[first.student.house]?.full}
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 800, color: "#0D9488" }}>
+                    {first.data.value}{first.data.value === "NH" ? "" : TRACK_EVENTS.includes(ev) ? "s" : "m"}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )
+      )}
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════
+// QUALIFIERS VIEW
+// ═══════════════════════════════════════
+const QualifiersView = memo(function QualifiersView({ results, students, compLevel, ageGroups, levelEvents }) {
+  const quals = useMemo(() => {
+    const out = [];
+    for (const ev of levelEvents) {
+      for (const ag of ageGroups) {
+        for (const gn of GENDERS) {
+          const fk = fbKey(evKey(ev, ag, gn));
+          const er = results[fk];
+          if (!er) continue;
+          const ranked = Object.entries(er)
+            .map(([sid, data]) => ({ student: students.find(s => s.id === parseInt(sid)), result: data.value, place: data.place }))
+            .filter(e => e.student && e.place > 0)
+            .sort((a, b) => a.place - b.place)
+            .slice(0, QUAL_NUMBERS[compLevel]?.individual || 2);
+          if (ranked.length > 0) out.push({ event: ev, ageGroup: ag, gender: gn, athletes: ranked });
+        }
+      }
+    }
+    return out;
+  }, [results, students, compLevel, ageGroups, levelEvents]);
+
+  return (
+    <div className="page-wide">
+      <div className="card">
+        <div style={{ fontSize: 20, fontWeight: 800 }}>
+          {compLevel === "State" ? "State Finals Results" : `${compLevel} Qualifiers`}</div>
+        <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{QUAL_NUMBERS[compLevel]?.note || ""}</div>
+      </div>
+      {quals.length === 0 ? (
+        <div className="card center" style={{ color: "#94A3B8" }}>Enter results to see qualifiers</div>
+      ) : quals.map((q, i) => (
+        <div key={i} className="card" style={{ padding: 10,
+          borderLeft: `4px solid ${TRACK_EVENTS.includes(q.event) ? "#DC2626" : "#16A34A"}` }}>
+          <div className="flex" style={{ justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, color: "#1B2A4A", fontSize: 13 }}>{q.event}</span>
+            <span style={{ fontSize: 11, color: "#64748B" }}>{q.ageGroup} {q.gender}</span>
+          </div>
+          {q.athletes.map((a, j) => (
+            <div key={j} className="flex" style={{ alignItems: "center", gap: 6, fontSize: 13, marginBottom: 2 }}>
+              <span style={{ fontWeight: 700, color: j === 0 ? "#D4A843" : "#64748B" }}>{j + 1}.</span>
+              <span style={{ fontWeight: 600, color: "#1B2A4A" }}>{a.student?.firstName} {a.student?.lastName}</span>
+              <span style={{ marginLeft: "auto", fontWeight: 700, color: "#0D9488" }}>
+                {a.result}{a.result === "NH" ? "" : TRACK_EVENTS.includes(q.event) ? "s" : "m"}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════
+function SchoolSportHub() {
+  const [meetId, setMeetId] = useState(() => localStorage.getItem("ssh_meetId") || null);
+  const [meetName, setMeetName] = useState("");
+  const [compLevel, setCompLevel] = useState("School");
+  const [showJoin, setShowJoin] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+
+  const stationParams = getStationParams();
+  const isStationMode = !!stationParams && meetId;
+
+  useEffect(() => {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    window._fbDb = firebase.database();
+  }, []);
+
+  const fb = useFirebase(meetId);
+
+  // Sync compLevel from Firebase config when joining an existing meet
+  useEffect(() => {
+    if (fb.config && fb.config.level) {
+      setCompLevel(fb.config.level);
+    }
+  }, [fb.config]);
+
+  const [view, setView] = useState("coordinator");
+  const ageGroups = compLevel === "School" ? SCHOOL_AGE_GROUPS : SSV_AGE_GROUPS;
+  const levelEvents = compLevel === "School"
+    ? ["100m", "200m", "Long Jump", "Triple Jump", "High Jump", "Shot Put"] : ALL_EVENTS;
+  const [selEvent, setSelEvent] = useState("100m");
+  const [selAge, setSelAge] = useState(ageGroups[0]);
+  const [selGender, setSelGender] = useState("Boys");
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2000); }, []);
+
+  const housePoints = useMemo(() => {
+    const pts = {};
+    Object.keys(HOUSES).forEach(h => { pts[h] = 0; });
+    Object.values(fb.results).forEach(er => {
+      if (!er || typeof er !== "object") return;
+      Object.entries(er).forEach(([sid, data]) => {
+        if (!data || !data.place) return;
+        const s = fb.students.find(x => x.id === parseInt(sid));
+        if (s && s.house && POINTS[data.place]) pts[s.house] = (pts[s.house] || 0) + POINTS[data.place];
+      });
+    });
+    return pts;
+  }, [fb.results, fb.students]);
+
+  const evDone = useMemo(() =>
+    Object.keys(fb.results).filter(k => {
+      const er = fb.results[k];
+      return er && typeof er === "object" && Object.values(er).some(r => r && r.place > 0);
+    }).length
+  , [fb.results]);
+  const evTotal = ageGroups.length * GENDERS.length * levelEvents.length;
+
+  // SHOW MEET SETUP SCREEN IF NO MEET
+  if (!meetId) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#F8FAFC", padding: 16 }}>
+        <div className="setup-card">
+          <div className="center mb-16">
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🏟️</div>
+            <h1 style={{ fontSize: 32, fontWeight: 800, color: "#1B2A4A", margin: "0 0 8px" }}>School Sport Hub</h1>
+            <p style={{ color: "#64748B", fontSize: 14 }}>Live results. Staff entry. Real-time sync.</p>
+          </div>
+
+          {!showJoin ? (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Meet Name</label>
+                <input type="text" placeholder="e.g. WPS Athletics 2026" value={meetName}
+                  onChange={e => setMeetName(e.target.value)} className="input" />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Competition Level</label>
+                <select value={compLevel} onChange={e => setCompLevel(e.target.value)} style={{ width: "100%", padding: "10px 8px" }}>
+                  {COMP_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <button onClick={() => {
+                if (!meetName.trim()) return;
+                const id = meetName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 30)
+                  + "-" + Date.now().toString(36);
+                const ags = compLevel === "School" ? SCHOOL_AGE_GROUPS : SSV_AGE_GROUPS;
+                const students = generateStudents(ags);
+                const studentsObj = {};
+                students.forEach(s => { studentsObj[s.id] = s; });
+                window._fbDb.ref(`meets/${id}`).set({
+                  config: { name: meetName, level: compLevel, created: new Date().toISOString() },
+                  students: studentsObj,
+                }).then(() => {
+                  localStorage.setItem("ssh_meetId", id);
+                  setMeetId(id);
+                  showToast("Meet created!");
+                });
+              }} className="btn btn-teal btn-full mb-12" disabled={!meetName.trim()}>
+                Create New Meet</button>
+
+              <div className="center">
+                <button onClick={() => setShowJoin(true)}
+                  style={{ background: "none", border: "none", color: "#0D9488", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
+                  Or join an existing meet</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748B", display: "block", marginBottom: 6 }}>Meet ID or Code</label>
+                <input type="text" placeholder="wps-athletics-2026-abc123" value={joinCode}
+                  onChange={e => setJoinCode(e.target.value)} className="input" />
+              </div>
+
+              <button onClick={() => {
+                if (!joinCode.trim()) return;
+                localStorage.setItem("ssh_meetId", joinCode.trim());
+                setMeetId(joinCode.trim());
+              }} className="btn btn-teal btn-full mb-12" disabled={!joinCode.trim()}>
+                Join Meet</button>
+
+              <div className="center">
+                <button onClick={() => setShowJoin(false)}
+                  style={{ background: "none", border: "none", color: "#0D9488", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
+                  Back to create new</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // STATION MODE
+  if (isStationMode) {
+    const isTrack = TRACK_EVENTS.includes(stationParams.event);
+    return (
+      <div style={{ minHeight: "100vh", background: "#F8FAFC" }}>
+        <StaffView
+          selEvent={stationParams.event}
+          selAge={stationParams.ageGroup}
+          selGender={stationParams.gender}
+          results={fb.results}
+          students={fb.students}
+          showToast={showToast}
+          saveResult={fb.saveResult}
+          saveEventResults={fb.saveEventResults}
+          setSelEvent={() => {}}
+          setSelAge={() => {}}
+          setSelGender={() => {}}
+          compLevel={compLevel}
+          ageGroups={ageGroups}
+          isStationMode={true}
+          exitStationMode={() => {
+            localStorage.removeItem("ssh_meetId");
+            window.location.href = "/";
+          }}
+        />
+      </div>
+    );
+  }
+
+  // NORMAL MODE WITH NAV
+  const CoordinatorView = () => {
+    const sorted = Object.entries(housePoints).sort((a, b) => b[1] - a[1]);
+    const mx = Math.max(...Object.values(housePoints), 1);
+    const qrRef = useRef(null);
+    const [showQR, setShowQR] = useState(false);
+    const [showMeetCode, setShowMeetCode] = useState(false);
+
+    useEffect(() => {
+      if (showQR && qrRef.current) {
+        qrRef.current.innerHTML = "";
+        new QRCode(qrRef.current, {
+          text: window.location.href,
+          width: 200, height: 200,
+          colorDark: "#1B2A4A", colorLight: "#ffffff",
+        });
+      }
+    }, [showQR]);
+
+
+    return (
+      <div className="page-wide">
+        <div className="card">
+          <h2 style={{ margin: "0 0 4px", color: "#1B2A4A", fontSize: 20 }}>Coordinator Dashboard</h2>
+          <p style={{ margin: 0, color: "#64748B", fontSize: 13 }}>
+            {fb.connected ? <span style={{ color: "#16A34A" }}>● Live</span> : <span style={{ color: "#DC2626" }}>● Offline</span>}
+            {" "} — {compLevel} Level
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
+          {[{ val: evDone, label: "Events Done", c: "#0D9488", bg: "#F0FDFA" },
+            { val: evTotal, label: "Total Events", c: "#2563EB", bg: "#EFF6FF" },
+            { val: fb.students.length, label: "Athletes", c: "#D4A843", bg: "#FFFBEB" }].map((s, i) => (
+            <div key={i} className="card center" style={{ background: s.bg }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: s.c }}>{s.val}</div>
+              <div style={{ fontSize: 12, color: "#64748B" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* SHARE SECTION — QR code + meet code for staff to join */}
+        <div className="qr-section">
+          <button onClick={() => setShowQR(!showQR)} className="btn btn-teal" style={{ marginBottom: showQR ? 16 : 0, marginRight: 8 }}>
+            {showQR ? "Hide" : "📱 Share with Staff & Parents"}
+          </button>
+          {showQR && (<>
+            <div ref={qrRef} style={{ display: "inline-block", marginBottom: 12, marginTop: 12 }} />
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", marginBottom: 8 }}>Staff: open app → Join Meet → enter code:</div>
+            <div style={{ background: "#F0FDFA", border: "2px dashed #0D9488", borderRadius: 12, padding: "12px 20px",
+              fontSize: 18, fontWeight: 800, color: "#0D9488", letterSpacing: 1, marginBottom: 8, cursor: "pointer",
+              userSelect: "all" }} onClick={() => { navigator.clipboard?.writeText(meetId); showToast("Meet code copied!"); }}>
+              {meetId}</div>
+            <div style={{ fontSize: 11, color: "#94A3B8" }}>Tap code to copy. Staff pick their event when they join.</div>
+          </>)}
+        </div>
+
+        <div className="card">
+          <h3 style={{ margin: "0 0 12px", color: "#1B2A4A", fontSize: 16 }}>House Standings</h3>
+          {sorted.map(([h, pts], i) => (
+            <div key={h} style={{ marginBottom: 10 }}>
+              <div className="flex" style={{ justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontWeight: 700, color: HOUSES[h]?.color || "#333", fontSize: 14 }}>
+                  {i === 0 && pts > 0 ? "👑 " : ""}{HOUSES[h]?.full || h}</span>
+                <span style={{ fontWeight: 800, color: "#1B2A4A", fontSize: 16 }}>{pts}</span>
+              </div>
+              <div style={{ height: 28, background: "#F1F5F9", borderRadius: 14, overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 14,
+                  background: `linear-gradient(90deg,${HOUSES[h]?.color || "#999"},${HOUSES[h]?.color || "#999"}CC)`,
+                  width: `${mx > 0 ? (pts / mx) * 100 : 0}%`, transition: "width .8s" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="card">
+          <h3 style={{ margin: "0 0 8px", color: "#1B2A4A", fontSize: 16 }}>Results — tap to enter</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: 6, textAlign: "left", borderBottom: "2px solid #E2E8F0", color: "#64748B" }}>Event</th>
+                  {ageGroups.map(ag2 => GENDERS.map(g => (
+                    <th key={`${ag2}${g}`} style={{ padding: 4, textAlign: "center", borderBottom: "2px solid #E2E8F0", color: "#64748B", fontSize: 10 }}>
+                      {ag2}<br/>{g[0]}</th>
+                  ))).flat()}
+                </tr>
+              </thead>
+              <tbody>
+                {levelEvents.map(ev2 => (
+                  <tr key={ev2}>
+                    <td style={{ padding: 6, fontWeight: 600, color: "#1B2A4A", borderBottom: "1px solid #F1F5F9" }}>{ev2}</td>
+                    {ageGroups.map(ag2 => GENDERS.map(g => {
+                      const fk = fbKey(evKey(ev2, ag2, g));
+                      const er = fb.results[fk];
+                      const done = er && Object.values(er).some(r => r && r.place > 0);
+                      const partial = er && Object.keys(er).length > 0 && !done;
+                      return (
+                        <td key={`${ag2}${g}`} style={{ padding: 4, textAlign: "center", borderBottom: "1px solid #F1F5F9" }}>
+                          <button onClick={() => { setSelEvent(ev2); setSelAge(ag2); setSelGender(g); setView("staff"); }}
+                            style={{ width: 28, height: 28, borderRadius: 6, border: "none", cursor: "pointer",
+                              background: done ? "#DCFCE7" : partial ? "#FEF9C3" : "#FEE2E2",
+                              color: done ? "#16A34A" : partial ? "#D4A843" : "#DC2626", fontWeight: 700, fontSize: 14 }}>
+                            {done ? "✓" : partial ? "…" : "·"}</button>
+                        </td>
+                      );
+                    })).flat()}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-8" style={{ marginTop: 8, fontSize: 11, color: "#64748B" }}>
+            <span><span style={{ color: "#16A34A" }}>✓</span> Ranked</span>
+            <span><span style={{ color: "#D4A843" }}>…</span> In progress</span>
+            <span><span style={{ color: "#DC2626" }}>·</span> Not started</span>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ margin: "0 0 8px", color: "#1B2A4A", fontSize: 16 }}>Settings</h3>
+          <div className="flex gap-16 flex-wrap">
+            <label style={{ fontSize: 13 }}>Level:{" "}
+              <select value={compLevel} onChange={e => { setCompLevel(e.target.value); setSelAge(e.target.value === "School" ? SCHOOL_AGE_GROUPS[0] : SSV_AGE_GROUPS[0]); }}
+                style={{ fontWeight: 600 }}>{COMP_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}</select>
+            </label>
+          </div>
+          {compLevel !== "School" && (
+            <div style={{ marginTop: 8, padding: "6px 10px", background: "#FEF3C7", borderRadius: 8, fontSize: 12, color: "#92400E" }}>
+              {compLevel}: {SSV_AGE_GROUPS.join(", ")} · {ALL_EVENTS.length} events · {QUAL_NUMBERS[compLevel]?.note}</div>
+          )}
+        </div>
+
+        <div className="card">
+          <h3 style={{ margin: "0 0 8px", color: "#1B2A4A", fontSize: 16 }}>Export Results</h3>
+          <button onClick={() => exportCSV(fb.results, fb.students, levelEvents, ageGroups, compLevel)}
+            className="btn btn-teal" style={{ fontSize: 14 }}>
+            📥 Download CSV for Spreadsheet Pipeline</button>
+          <div style={{ marginTop: 6, fontSize: 12, color: "#94A3B8" }}>
+            Paste into the next level's Entries sheet — columns match exactly.</div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ margin: "0 0 8px", color: "#1B2A4A", fontSize: 16 }}>Meet</h3>
+          <button onClick={() => {
+            localStorage.removeItem("ssh_meetId");
+            window.location.href = "/";
+          }} className="btn btn-danger" style={{ fontSize: 14 }}>
+            Leave Meet</button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F8FAFC" }}>
+      {!isStationMode && (
+        <div className="nav">
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, marginRight: 8 }}>School Sport Hub</span>
+          {fb.connected && <span style={{ color: "#16A34A", fontSize: 10, marginRight: 8 }}>● LIVE</span>}
+          {["coordinator", "staff", "live", "champions", "qualifiers"].map(v => (
+            <button key={v} className={`nav-btn ${view === v ? "active" : ""}`} onClick={() => setView(v)}>
+              {v === "staff" ? "Staff Entry" : v === "live" ? "Live" : v[0].toUpperCase() + v.slice(1)}</button>
+          ))}
+        </div>
+      )}
+
+      {toast && <div className="toast">✓ {toast}</div>}
+
+      {view === "coordinator" && <CoordinatorView />}
+      {view === "staff" && (
+        <StaffView
+          selEvent={selEvent}
+          selAge={selAge}
+          selGender={selGender}
+          results={fb.results}
+          students={fb.students}
+          showToast={showToast}
+          saveResult={fb.saveResult}
+          saveEventResults={fb.saveEventResults}
+          setSelEvent={setSelEvent}
+          setSelAge={setSelAge}
+          setSelGender={setSelGender}
+          compLevel={compLevel}
+          ageGroups={ageGroups}
+          isStationMode={false}
+          exitStationMode={() => {}}
+        />
+      )}
+      {view === "live" && <LiveView results={fb.results} students={fb.students} compLevel={compLevel} ageGroups={ageGroups} levelEvents={levelEvents} />}
+      {view === "champions" && <ChampionsView results={fb.results} students={fb.students} ageGroups={ageGroups} levelEvents={levelEvents} />}
+      {view === "qualifiers" && <QualifiersView results={fb.results} students={fb.students} compLevel={compLevel} ageGroups={ageGroups} levelEvents={levelEvents} />}
+    </div>
+  );
+}
+
+// ─── CSV EXPORT ───
+function exportCSV(results, students, levelEvents, ageGroups, compLevel) {
+  const rows = [["#", "First Name", "Last Name", "Age Group", "Gender", "Event", "Result", "Place", "House/School"]];
+  let n = 1;
+  for (const ag of ageGroups) {
+    for (const gn of GENDERS) {
+      for (const ev of levelEvents) {
+        const fk = fbKey(evKey(ev, ag, gn));
+        const er = results[fk];
+        if (!er) continue;
+        const ranked = Object.entries(er)
+          .filter(([, v]) => v && v.place > 0)
+          .sort((a, b) => a[1].place - b[1].place);
+        ranked.forEach(([sid, data]) => {
+          const s = students.find(x => x.id === parseInt(sid));
+          if (!s) return;
+          rows.push([n++, s.firstName, s.lastName, ag, gn, ev,
+            data.value + (data.value === "NH" ? "" : TRACK_EVENTS.includes(ev) ? "s" : "m"),
+            data.place, s.house || s.school || ""]);
+        });
+      }
+    }
+  }
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${compLevel}_Results_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── RENDER ───
+ReactDOM.render(<SchoolSportHub />, document.getElementById("root"));
+</script>
+<footer style="text-align:center;padding:20px;color:#888;font-size:12px;">© 2026 10 16 Pty Ltd. All rights reserved.</footer>
+</body>
+</html>
